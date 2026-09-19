@@ -9,16 +9,7 @@ import React, {
   type ReactNode,
 } from "react";
 import { useAuth } from "@/context/AuthContext";
-import {
-  collection,
-  doc,
-  getDocs,
-  setDoc,
-  deleteDoc,
-  query,
-  where,
-} from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { supabase } from "@/lib/supabase";
 import type {
   CertificateEvent,
   EventAction,
@@ -91,6 +82,43 @@ interface EventStoreContextValue {
 
 const EventStoreContext = createContext<EventStoreContextValue | null>(null);
 
+// ─── Helper: map Supabase row ↔ CertificateEvent ─────────────────────────────
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function rowToEvent(row: any): CertificateEvent {
+  return {
+    id: row.id,
+    adminId: row.admin_id,
+    creatorEmail: row.creator_email ?? "",
+    eventName: row.event_name,
+    category: row.category ?? "",
+    eventDate: row.event_date ?? "",
+    status: row.status ?? "Draft",
+    baseImageUrl: row.base_image_url ?? "",
+    csvData: row.csv_data ?? [],
+    canvasConfigs: row.canvas_configs ?? [],
+    createdAt: row.created_at ?? new Date().toISOString(),
+    updatedAt: row.updated_at ?? new Date().toISOString(),
+  };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function eventToRow(event: CertificateEvent): Record<string, any> {
+  return {
+    id: event.id,
+    admin_id: event.adminId,
+    creator_email: event.creatorEmail ?? "",
+    event_name: event.eventName,
+    category: event.category ?? "",
+    event_date: event.eventDate ?? "",
+    status: event.status ?? "Draft",
+    base_image_url: event.baseImageUrl ?? "",
+    csv_data: event.csvData ?? [],
+    canvas_configs: event.canvasConfigs ?? [],
+    updated_at: new Date().toISOString(),
+  };
+}
+
 // ─── Provider with Isolated Multi-Tenant Admin Storage ──────────────────────
 
 export function EventStoreProvider({ children }: { children: ReactNode }) {
@@ -106,39 +134,33 @@ export function EventStoreProvider({ children }: { children: ReactNode }) {
 
     async function loadIsolatedEvents() {
       // SCENARIO A: Authenticated Administrator
-      // Every individual admin has their own isolated workspace (events where adminId == user.uid)
       if (user && isAdmin) {
         currentAdminUid.current = user.uid;
         const userStorageKey = `siec_events_${user.uid}`;
 
-        // 1. Check Cloud Firestore for this specific admin's events
-        if (db) {
+        // 1. Query Supabase for this specific admin's events
+        if (supabase) {
           try {
-            const q = query(
-              collection(db, "events"),
-              where("adminId", "==", user.uid)
-            );
-            const querySnap = await getDocs(q);
-            const adminEvents: CertificateEvent[] = [];
-            querySnap.forEach((docSnap) => {
-              adminEvents.push(docSnap.data() as CertificateEvent);
-            });
+            const { data, error } = await supabase
+              .from("events")
+              .select("*")
+              .eq("admin_id", user.uid)
+              .order("created_at", { ascending: false });
 
-            if (isSubscribed) {
-              if (adminEvents.length > 0) {
-                dispatch({ type: "SET_EVENTS", payload: adminEvents });
-                try {
-                  localStorage.setItem(userStorageKey, JSON.stringify(adminEvents));
-                } catch {}
-                return;
-              }
+            if (!error && data && data.length > 0 && isSubscribed) {
+              const adminEvents: CertificateEvent[] = data.map(rowToEvent);
+              dispatch({ type: "SET_EVENTS", payload: adminEvents });
+              try {
+                localStorage.setItem(userStorageKey, JSON.stringify(adminEvents));
+              } catch {}
+              return;
             }
           } catch (err) {
-            console.warn("Firestore query error for admin events:", err);
+            console.warn("Supabase query error for admin events:", err);
           }
         }
 
-        // 2. Check Isolated User-Scoped Local Storage fallback
+        // 2. Fallback: user-scoped localStorage
         if (typeof window !== "undefined") {
           try {
             const saved = localStorage.getItem(userStorageKey);
@@ -152,28 +174,24 @@ export function EventStoreProvider({ children }: { children: ReactNode }) {
           } catch {}
         }
 
-        // 3. Brand New Admin Account: start with clean slate (empty list, NO leak of other admins' data)
+        // 3. Brand new admin — clean slate
         if (isSubscribed) {
           dispatch({ type: "SET_EVENTS", payload: [] });
         }
       } else {
         // SCENARIO B: Public Participant Portal (Not logged in as Admin)
-        // Public portal only needs published events to let attendees download their certificates
         currentAdminUid.current = null;
 
-        if (db) {
+        if (supabase) {
           try {
-            const q = query(
-              collection(db, "events"),
-              where("status", "==", "Published")
-            );
-            const querySnap = await getDocs(q);
-            const publishedEvents: CertificateEvent[] = [];
-            querySnap.forEach((docSnap) => {
-              publishedEvents.push(docSnap.data() as CertificateEvent);
-            });
+            const { data, error } = await supabase
+              .from("events")
+              .select("*")
+              .eq("status", "Published")
+              .order("created_at", { ascending: false });
 
-            if (isSubscribed && publishedEvents.length > 0) {
+            if (!error && data && data.length > 0 && isSubscribed) {
+              const publishedEvents: CertificateEvent[] = data.map(rowToEvent);
               dispatch({ type: "SET_EVENTS", payload: publishedEvents });
               try {
                 localStorage.setItem(
@@ -248,10 +266,14 @@ export function EventStoreProvider({ children }: { children: ReactNode }) {
           }
         } catch {}
 
-        if (db) {
-          setDoc(doc(db, "events", eventToSave.id), eventToSave, { merge: true }).catch((err) =>
-            console.warn("Firestore save failed:", err)
-          );
+        // Supabase upsert (non-blocking)
+        if (supabase) {
+          supabase
+            .from("events")
+            .upsert(eventToRow(eventToSave), { onConflict: "id" })
+            .then(({ error }) => {
+              if (error) console.warn("Supabase save failed:", error.message);
+            });
         }
       } else if (action.type === "UPDATE_EVENT") {
         const eventToSave: CertificateEvent = {
@@ -282,10 +304,14 @@ export function EventStoreProvider({ children }: { children: ReactNode }) {
           localStorage.setItem(PUBLIC_PUBLISHED_EVENTS_KEY, JSON.stringify(updatedPub));
         } catch {}
 
-        if (db) {
-          setDoc(doc(db, "events", eventToSave.id), eventToSave, { merge: true }).catch((err) =>
-            console.warn("Firestore update failed:", err)
-          );
+        // Supabase upsert (non-blocking)
+        if (supabase) {
+          supabase
+            .from("events")
+            .upsert(eventToRow(eventToSave), { onConflict: "id" })
+            .then(({ error }) => {
+              if (error) console.warn("Supabase update failed:", error.message);
+            });
         }
       } else if (action.type === "DELETE_EVENT") {
         const eventId = action.payload;
@@ -300,10 +326,15 @@ export function EventStoreProvider({ children }: { children: ReactNode }) {
           localStorage.setItem(PUBLIC_PUBLISHED_EVENTS_KEY, JSON.stringify(updatedPub));
         } catch {}
 
-        if (db) {
-          deleteDoc(doc(db, "events", eventId)).catch((err) =>
-            console.warn("Firestore delete failed:", err)
-          );
+        // Supabase delete (non-blocking)
+        if (supabase) {
+          supabase
+            .from("events")
+            .delete()
+            .eq("id", eventId)
+            .then(({ error }) => {
+              if (error) console.warn("Supabase delete failed:", error.message);
+            });
         }
       }
     }
