@@ -10,12 +10,26 @@ const clean = (val?: string) =>
   val ? val.trim().replace(/^["']|["']$/g, "").trim() : "";
 
 const firebaseConfig = {
-  apiKey: clean(process.env.NEXT_PUBLIC_FIREBASE_API_KEY),
-  authDomain: clean(process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN),
-  projectId: clean(process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID),
-  storageBucket: clean(process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET),
-  messagingSenderId: clean(process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID),
-  appId: clean(process.env.NEXT_PUBLIC_FIREBASE_APP_ID),
+  apiKey: clean(
+    process.env.NEXT_PUBLIC_FIREBASE_API_KEY || process.env.FIREBASE_API_KEY
+  ),
+  authDomain: clean(
+    process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || process.env.FIREBASE_AUTH_DOMAIN
+  ),
+  projectId: clean(
+    process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID
+  ),
+  storageBucket: clean(
+    process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET ||
+      process.env.FIREBASE_STORAGE_BUCKET
+  ),
+  messagingSenderId: clean(
+    process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID ||
+      process.env.FIREBASE_MESSAGING_SENDER_ID
+  ),
+  appId: clean(
+    process.env.NEXT_PUBLIC_FIREBASE_APP_ID || process.env.FIREBASE_APP_ID
+  ),
 };
 
 // Check if credentials are provided in .env.local

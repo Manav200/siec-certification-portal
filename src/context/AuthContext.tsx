@@ -26,7 +26,10 @@ const AUTHORIZED_ADMINS_STORAGE_KEY = "siec_authorized_admins_list";
 
 // 1. Parse initial admin emails from environment variables (.env.local)
 const getEnvAdminEmails = (): string[] => {
-  const envList = process.env.NEXT_PUBLIC_ADMIN_EMAILS || "";
+  const envList =
+    process.env.NEXT_PUBLIC_ADMIN_EMAILS ||
+    process.env.ADMIN_EMAILS ||
+    "";
   const list = envList
     .split(",")
     .map((e) => e.trim().toLowerCase())

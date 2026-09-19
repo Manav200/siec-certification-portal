@@ -6,7 +6,9 @@ export const ADMIN_AUTH_CONFIG = {
    * Retrieves the current Admin Registration Key from environment or falls back to default.
    */
   getAdminRegistrationKey(): string {
-    const key = process.env.NEXT_PUBLIC_ADMIN_REGISTRATION_KEY;
+    const key =
+      process.env.NEXT_PUBLIC_ADMIN_REGISTRATION_KEY ||
+      process.env.ADMIN_REGISTRATION_KEY;
     if (key && key.trim()) {
       return key.trim();
     }
