@@ -173,8 +173,8 @@ export default function EventCardGrid({ onViewAnalyticsAction }: EventCardGridPr
       <DeleteEventModal
         event={eventToDelete}
         isOpen={Boolean(eventToDelete)}
-        onClose={() => setEventToDelete(null)}
-        onConfirmDelete={handleConfirmDelete}
+        onCloseAction={() => setEventToDelete(null)}
+        onConfirmDeleteAction={handleConfirmDelete}
       />
     </div>
   );

@@ -6,15 +6,15 @@ import type { CertificateEvent } from "@/types";
 interface DeleteEventModalProps {
   event: CertificateEvent | null;
   isOpen: boolean;
-  onClose: () => void;
-  onConfirmDelete: (eventId: string) => void;
+  onCloseAction: () => void;
+  onConfirmDeleteAction: (eventId: string) => void;
 }
 
 export default function DeleteEventModal({
   event,
   isOpen,
-  onClose,
-  onConfirmDelete,
+  onCloseAction,
+  onConfirmDeleteAction,
 }: DeleteEventModalProps) {
   if (!isOpen || !event) return null;
 
@@ -23,7 +23,7 @@ export default function DeleteEventModal({
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity animate-fade-in"
-        onClick={onClose}
+        onClick={onCloseAction}
       />
 
       {/* Modal Card */}
@@ -95,14 +95,14 @@ export default function DeleteEventModal({
         <div className="mt-6 flex items-center justify-end gap-3 border-t border-gray-100 pt-4">
           <button
             type="button"
-            onClick={onClose}
+            onClick={onCloseAction}
             className="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors shadow-sm"
           >
             Cancel
           </button>
           <button
             type="button"
-            onClick={() => onConfirmDelete(event.id)}
+            onClick={() => onConfirmDeleteAction(event.id)}
             className="inline-flex items-center gap-1.5 rounded-xl bg-red-600 px-4 py-2.5 text-xs font-semibold text-white hover:bg-red-700 transition-colors shadow-lg shadow-red-500/25"
             id={`confirm-delete-btn-${event.id}`}
           >
