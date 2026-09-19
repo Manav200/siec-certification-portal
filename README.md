@@ -1,4 +1,4 @@
-# Certificate Automation Portal 🎓
+# SIEC Certification Portal 🎓
 
 A modern, full-stack Certificate Generation & Verification platform built with **Next.js 15**, **React 19**, **Tailwind CSS**, and **Firebase Authentication**.
 
