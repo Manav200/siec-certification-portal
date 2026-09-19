@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useEventStore } from "@/store/useEventStore";
+import { useAuth } from "@/context/AuthContext";
 import type { CertificateEvent } from "@/types";
 import EventHeaderBar from "@/components/admin/EventHeaderBar";
 import CreateEventModal from "@/components/admin/CreateEventModal";
@@ -9,6 +10,7 @@ import EventCardGrid from "@/components/admin/EventCardGrid";
 import EventAnalyticsModal from "@/components/admin/EventAnalyticsModal";
 
 export default function AdminDashboardPage() {
+  const { user } = useAuth();
   const { state } = useEventStore();
   const { events } = state;
 
@@ -78,6 +80,18 @@ export default function AdminDashboardPage() {
             Create events, manage certificate templates, and track participant analytics.
           </p>
         </div>
+
+        {/* Private Workspace Security Badge */}
+        {user?.email && (
+          <div className="inline-flex items-center gap-2 rounded-xl bg-blue-50/80 border border-blue-200/80 px-3.5 py-2 text-xs text-blue-900 shadow-sm self-start sm:self-auto">
+            <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span>
+              Isolated Workspace: <strong className="font-semibold">{user.email}</strong>
+            </span>
+            <span className="text-blue-300">•</span>
+            <span className="text-[11px] text-blue-700 font-medium">Private Data</span>
+          </div>
+        )}
       </div>
 
       {/* Event Header Bar (Active Event Selector & Create Event Button) */}

@@ -13,22 +13,25 @@ function AdminLoginForm() {
 
   const {
     user,
+    userRole,
     isAdmin,
     loading,
     error,
     isFirebaseConfigured,
     signInWithEmailAction,
-    signUpWithEmailAction,
+    signUpAdminAction,
     signInWithGoogleAction,
     resetPasswordAction,
-    loginAsDemoAdminAction,
     clearErrorAction,
   } = useAuth();
 
   const [mode, setMode] = useState<"signin" | "signup" | "reset">("signin");
+  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [adminPasscode, setAdminPasscode] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showPasscode, setShowPasscode] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
 
@@ -50,18 +53,20 @@ function AdminLoginForm() {
         await signInWithEmailAction(email, password);
         router.push(redirectPath);
       } else if (mode === "signup") {
-        await signUpWithEmailAction(email, password);
+        await signUpAdminAction(email, password, adminPasscode, fullName);
         setSuccessMessage(
-          "Account created successfully! Checking administrator authorization..."
+          "Admin account created and authorized successfully! Redirecting to workspace..."
         );
-        router.push(redirectPath);
+        setTimeout(() => {
+          router.push(redirectPath);
+        }, 1000);
       } else if (mode === "reset") {
         await resetPasswordAction(email);
         setSuccessMessage(
-          "Password reset email sent! Please check your inbox and follow the instructions."
+          "Password reset link sent! Check your inbox to set a new password."
         );
       }
-    } catch (err) {
+    } catch {
       // Error handled by AuthContext
     } finally {
       setIsSubmitting(false);
@@ -75,17 +80,11 @@ function AdminLoginForm() {
     try {
       await signInWithGoogleAction();
       router.push(redirectPath);
-    } catch (err) {
+    } catch {
       // Error handled by AuthContext
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const handleDemoAdmin = () => {
-    clearErrorAction();
-    loginAsDemoAdminAction();
-    router.push(redirectPath);
   };
 
   return (
@@ -104,25 +103,31 @@ function AdminLoginForm() {
             </div>
           </Link>
           <h1 className="font-display text-2xl font-black tracking-tight text-gray-900 mt-4">
-            SIEC Admin Workspace
+            SIEC Admin Portal
           </h1>
           <p className="text-xs text-gray-500 mt-1">
-            Secure Authentication &amp; Role-Based Event Access
+            Production Certificate Generation &amp; Event Management
           </p>
 
-          {/* Firebase Connection Status Badge */}
-          <div className="mt-3 flex justify-center">
+          {/* Connection & Security Status */}
+          <div className="mt-3 flex items-center justify-center gap-2">
             {isFirebaseConfigured ? (
               <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-bold text-emerald-700 border border-emerald-200">
                 <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                Firebase Console Connected
+                Firebase Auth Active
               </span>
             ) : (
               <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 text-[11px] font-bold text-amber-800 border border-amber-200">
                 <span className="h-2 w-2 rounded-full bg-amber-500" />
-                Firebase Config Needed (.env.local)
+                Config Needed (.env.local)
               </span>
             )}
+            <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1 text-[10px] font-bold text-blue-700 border border-blue-200">
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+              Role-Protected
+            </span>
           </div>
         </div>
 
@@ -192,8 +197,18 @@ function AdminLoginForm() {
             </div>
           )}
 
-          {/* 1-Click Google Sign In (for Sign In & Sign Up modes) */}
-          {mode !== "reset" && (
+          {/* User Role Notice if signed in as normal user */}
+          {user && !isAdmin && userRole === "user" && (
+            <div className="mb-4 rounded-xl bg-amber-50 p-3 text-xs text-amber-800 border border-amber-200 animate-fade-in">
+              <p className="font-bold">Standard User Account Detected</p>
+              <p className="text-[11px] mt-0.5">
+                Signed in as <span className="font-semibold">{user.email}</span>. To access administrative controls, please sign in with an Administrator account or register with an authorized admin passcode.
+              </p>
+            </div>
+          )}
+
+          {/* 1-Click Google Sign In (for Sign In) */}
+          {mode === "signin" && (
             <>
               <button
                 type="button"
@@ -233,8 +248,29 @@ function AdminLoginForm() {
             </>
           )}
 
-          {/* Email / Password Form */}
+          {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Full Name field on Signup */}
+            {mode === "signup" && (
+              <div>
+                <label
+                  htmlFor="auth-fullname"
+                  className="block text-[11px] font-bold uppercase tracking-wider text-gray-700 mb-1"
+                >
+                  Admin Full Name
+                </label>
+                <input
+                  id="auth-fullname"
+                  type="text"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="e.g. Manav Mahawar"
+                  className="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-xs text-gray-900 placeholder-gray-400 outline-none transition-all duration-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20"
+                />
+              </div>
+            )}
+
+            {/* Email Address */}
             <div>
               <label
                 htmlFor="auth-email"
@@ -253,6 +289,7 @@ function AdminLoginForm() {
               />
             </div>
 
+            {/* Password */}
             {mode !== "reset" && (
               <div>
                 <div className="flex items-center justify-between mb-1">
@@ -293,44 +330,59 @@ function AdminLoginForm() {
               </div>
             )}
 
+            {/* Admin Security Passcode field (Only for Register Admin mode) */}
+            {mode === "signup" && (
+              <div className="rounded-xl bg-blue-50/60 p-3.5 border border-blue-100">
+                <div className="flex items-center justify-between mb-1">
+                  <label
+                    htmlFor="auth-admin-passcode"
+                    className="block text-[11px] font-bold uppercase tracking-wider text-blue-950 flex items-center gap-1.5"
+                  >
+                    <span>🛡️</span>
+                    <span>Admin Security Passcode</span>
+                  </label>
+                  <span className="text-[10px] font-bold text-blue-600 bg-blue-100/80 px-1.5 py-0.5 rounded">
+                    Required
+                  </span>
+                </div>
+                <div className="relative">
+                  <input
+                    id="auth-admin-passcode"
+                    type={showPasscode ? "text" : "password"}
+                    required
+                    value={adminPasscode}
+                    onChange={(e) => setAdminPasscode(e.target.value)}
+                    placeholder="Enter admin passcode (default: admin123)"
+                    className="w-full rounded-xl border border-blue-200 bg-white px-3.5 py-2.5 pr-10 text-xs text-gray-900 placeholder-gray-400 outline-none transition-all duration-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPasscode(!showPasscode)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs"
+                  >
+                    {showPasscode ? "🙈" : "👁️"}
+                  </button>
+                </div>
+                <p className="text-[10px] text-blue-800/80 mt-1.5 leading-relaxed">
+                  Protects your public deployment by ensuring only authorized administrators can self-register with full event &amp; certificate control.
+                </p>
+              </div>
+            )}
+
             <button
               type="submit"
               disabled={isSubmitting}
-              className="btn-primary w-full py-2.5 text-xs font-bold text-center mt-2 shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-60"
+              className="btn-primary w-full py-2.5 text-xs font-bold text-center mt-2 shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-60 cursor-pointer"
             >
               {isSubmitting
                 ? "Processing..."
                 : mode === "signin"
                 ? "Sign In to Admin Workspace"
                 : mode === "signup"
-                ? "Create Admin Account"
-                : "Send Reset Link"}
+                ? "Register & Authorize Admin Account"
+                : "Send Password Reset Link"}
             </button>
           </form>
-
-          {/* Fallback / Quick Demo Admin Access when testing locally */}
-          <div className="mt-6 pt-5 border-t border-gray-100">
-            <div className="rounded-xl bg-gray-50/80 p-3 border border-gray-200/80">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-gray-600">
-                  Local Dev / Quick Access:
-                </span>
-                <span className="text-[9px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.2 rounded">
-                  Instant Test
-                </span>
-              </div>
-              <p className="text-[11px] text-gray-500 mb-2">
-                Click below to bypass sign-in and test the admin workspace immediately:
-              </p>
-              <button
-                type="button"
-                onClick={handleDemoAdmin}
-                className="w-full rounded-lg bg-gray-900 text-white py-1.5 px-3 text-xs font-bold hover:bg-black transition-colors"
-              >
-                ⚡ Sign In as Demo Admin (admin@siec.edu)
-              </button>
-            </div>
-          </div>
         </div>
 
         {/* Footer Navigation */}
@@ -359,4 +411,3 @@ export default function AdminLoginPage() {
     </Suspense>
   );
 }
-

@@ -66,7 +66,7 @@ export default function AdminGuard({ children }: AdminGuardProps) {
     );
   }
 
-  // 3. Authenticated but Unauthorized (Role: Non-Admin)
+  // 3. Authenticated but Unauthorized (Role: Non-Admin / Standard User)
   if (!isAdmin) {
     return (
       <div className="flex min-h-[70vh] flex-col items-center justify-center p-4">
@@ -77,29 +77,29 @@ export default function AdminGuard({ children }: AdminGuardProps) {
             </svg>
           </div>
           <span className="rounded-full bg-red-100 px-3 py-1 text-[11px] font-bold text-red-700">
-            403 Forbidden
+            Standard User • Access Restricted
           </span>
           <h2 className="font-display text-xl font-bold text-gray-900 mt-2">
-            Admin Authorization Required
+            Administrator Privileges Required
           </h2>
           <p className="mt-2 text-xs text-gray-600 leading-relaxed">
-            You are signed in as <span className="font-semibold text-gray-900">{user.email}</span>, but this account does not have administrator privileges to manage SIEC events.
+            You are signed in as <span className="font-semibold text-gray-900">{user.email}</span> with a standard participant/user account. Administrator privileges are required to create and manage certificate events.
           </p>
 
           <div className="mt-4 rounded-xl bg-gray-50 p-3 text-left border border-gray-100 text-[11px] text-gray-500">
-            <p className="font-semibold text-gray-700 mb-1">To gain access:</p>
-            <ul className="list-disc list-inside space-y-0.5">
-              <li>Add this email to <code className="bg-gray-200 px-1 py-0.5 rounded text-[10px]">NEXT_PUBLIC_ADMIN_EMAILS</code> in your environment, or</li>
-              <li>Set role to <code className="bg-gray-200 px-1 py-0.5 rounded text-[10px]">&quot;admin&quot;</code> in the Firestore users collection.</li>
+            <p className="font-semibold text-gray-700 mb-1">To gain Administrator access:</p>
+            <ul className="list-disc list-inside space-y-1">
+              <li>Register an admin account on the <strong>Register Admin</strong> page with your organization&apos;s admin passcode, or</li>
+              <li>Have an existing administrator update your role to <code className="bg-gray-200 px-1 py-0.5 rounded text-[10px]">&quot;admin&quot;</code> in the Firestore users collection.</li>
             </ul>
           </div>
 
           <div className="mt-6 flex flex-col gap-2">
             <button
               onClick={() => logoutAction()}
-              className="btn-primary w-full text-xs py-2.5 font-bold"
+              className="btn-primary w-full text-xs py-2.5 font-bold cursor-pointer"
             >
-              Sign Out &amp; Switch Account
+              Sign Out &amp; Switch to Admin Account
             </button>
             <Link href="/" className="btn-secondary w-full text-center text-xs py-2">
               Back to Certificate Portal

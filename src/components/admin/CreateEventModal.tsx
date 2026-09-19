@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useEventStore } from "@/store/useEventStore";
+import { useAuth } from "@/context/AuthContext";
 import type { CertificateEvent } from "@/types";
 
 interface CreateEventModalProps {
@@ -24,6 +25,7 @@ export default function CreateEventModal({
   onCloseAction,
 }: CreateEventModalProps) {
   const { dispatch } = useEventStore();
+  const { user } = useAuth();
   const [eventName, setEventName] = useState("");
   const [category, setCategory] = useState("Hackathon");
   const [eventDate, setEventDate] = useState(
@@ -47,12 +49,16 @@ export default function CreateEventModal({
 
     const newEvent: CertificateEvent = {
       id: `evt-${Date.now().toString().slice(-6)}`,
+      adminId: user?.uid || "unassigned",
+      creatorEmail: user?.email || "",
       eventName: eventName.trim(),
       category: category,
       eventDate: eventDate,
       status: "Draft",
       baseImageUrl: "",
       csvData: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
 
     dispatch({ type: "ADD_EVENT", payload: newEvent });

@@ -14,168 +14,237 @@ import {
   signInWithPopup,
   signOut,
   sendPasswordResetEmail,
+  updateProfile,
   type User,
 } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { auth, db, googleProvider, isFirebaseConfigured } from "@/lib/firebase";
+import { ADMIN_AUTH_CONFIG } from "@/config/auth";
+import type { UserRole, UserProfile } from "@/types";
 
-// Parse allowed admin emails from environment variables
-const getAdminEmails = (): string[] => {
+const AUTHORIZED_ADMINS_STORAGE_KEY = "siec_authorized_admins_list";
+
+// 1. Parse initial admin emails from environment variables (.env.local)
+const getEnvAdminEmails = (): string[] => {
   const envList = process.env.NEXT_PUBLIC_ADMIN_EMAILS || "";
   const list = envList
     .split(",")
     .map((e) => e.trim().toLowerCase())
     .filter(Boolean);
 
-  // Default fallback admin emails for development & testing
   if (list.length === 0) {
     return ["admin@siec.edu", "admin@example.com"];
   }
   return list;
 };
 
+// 2. Retrieve combined list of admin emails (Environment Whitelist + Dynamically Registered Admins)
+const getAllAuthorizedAdminEmails = (): string[] => {
+  const envEmails = getEnvAdminEmails();
+  if (typeof window === "undefined") return envEmails;
+
+  try {
+    const stored = localStorage.getItem(AUTHORIZED_ADMINS_STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      if (Array.isArray(parsed)) {
+        return Array.from(
+          new Set([...envEmails, ...parsed.map((e) => String(e).toLowerCase().trim())])
+        );
+      }
+    }
+  } catch (e) {
+    console.warn("Could not read authorized admins from local storage:", e);
+  }
+  return envEmails;
+};
+
+// 3. Save a newly verified admin email into persistent storage
+const persistAuthorizedAdminEmail = (email: string) => {
+  if (typeof window === "undefined" || !email) return;
+
+  try {
+    const cleanEmail = email.toLowerCase().trim();
+    const current = getAllAuthorizedAdminEmails();
+    const updated = Array.from(new Set([...current, cleanEmail]));
+    localStorage.setItem(AUTHORIZED_ADMINS_STORAGE_KEY, JSON.stringify(updated));
+  } catch (e) {
+    console.warn("Could not persist authorized admin email:", e);
+  }
+};
+
 interface AuthContextType {
   user: User | null;
+  userRole: UserRole | null;
   isAdmin: boolean;
   loading: boolean;
   error: string | null;
   isFirebaseConfigured: boolean;
   signInWithEmailAction: (email: string, pass: string) => Promise<void>;
-  signUpWithEmailAction: (email: string, pass: string) => Promise<void>;
+  signUpWithEmailAction: (
+    email: string,
+    pass: string,
+    adminKey?: string,
+    displayName?: string
+  ) => Promise<void>;
+  signUpAdminAction: (
+    email: string,
+    pass: string,
+    adminKey: string,
+    displayName?: string
+  ) => Promise<void>;
+  signUpUserAction: (
+    email: string,
+    pass: string,
+    displayName?: string
+  ) => Promise<void>;
   signInWithGoogleAction: () => Promise<void>;
   resetPasswordAction: (email: string) => Promise<void>;
   logoutAction: () => Promise<void>;
-  loginAsDemoAdminAction: () => void;
   clearErrorAction: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Storage key for mock demo admin state when testing locally without Firebase keys
-const DEMO_ADMIN_KEY = "siec_demo_admin_active";
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Check admin authorization based on email and Firestore
-  const checkIsAdmin = async (currentUser: User | null): Promise<boolean> => {
-    if (!currentUser || !currentUser.email) return false;
+  /**
+   * Reads or creates a persistent user profile in Firestore and local registry.
+   * Ensures that once an admin registers with the authorized passcode, they are
+   * permanently remembered across all logins and sessions.
+   */
+  const fetchOrCreateUserRole = async (
+    currentUser: User,
+    desiredRole?: UserRole
+  ): Promise<UserRole> => {
+    if (!currentUser || !currentUser.email) return "user";
 
-    const email = currentUser.email.toLowerCase();
-    const adminEmails = getAdminEmails();
+    const email = currentUser.email.toLowerCase().trim();
+    const isKnownAdmin = getAllAuthorizedAdminEmails().includes(email);
 
-    // 1. Check environment variable admin whitelist
-    if (adminEmails.includes(email)) {
-      return true;
+    // If already registered or requested as Admin, persist email immediately
+    if (desiredRole === "admin" || isKnownAdmin) {
+      persistAuthorizedAdminEmail(email);
     }
 
-    // 2. Check Firestore "users/{uid}" role document if Firestore is active
+    // 1. Check Cloud Firestore if available
     if (db) {
       try {
         const userDocRef = doc(db, "users", currentUser.uid);
         const userSnap = await getDoc(userDocRef);
-        if (userSnap.exists() && userSnap.data()?.role === "admin") {
-          return true;
+
+        if (userSnap.exists()) {
+          const profile = userSnap.data() as Partial<UserProfile>;
+          if (profile.role === "admin") {
+            persistAuthorizedAdminEmail(email);
+            return "admin";
+          }
+          if (profile.role === "user") {
+            // Upgrade if registered as admin or found in authorized registry
+            if (desiredRole === "admin" || isKnownAdmin) {
+              await setDoc(
+                userDocRef,
+                { role: "admin", lastLoginAt: new Date().toISOString() },
+                { merge: true }
+              );
+              persistAuthorizedAdminEmail(email);
+              return "admin";
+            }
+            return "user";
+          }
         }
-      } catch (err) {
-        console.warn("Could not check Firestore user role:", err);
+
+        // Document does not exist yet: create it with designated role
+        const roleToAssign: UserRole =
+          desiredRole === "admin" || isKnownAdmin ? "admin" : "user";
+
+        await setDoc(
+          userDocRef,
+          {
+            uid: currentUser.uid,
+            email: currentUser.email,
+            displayName:
+              currentUser.displayName || email.split("@")[0] || "User",
+            photoURL: currentUser.photoURL || null,
+            role: roleToAssign,
+            createdAt: new Date().toISOString(),
+            lastLoginAt: new Date().toISOString(),
+          },
+          { merge: true }
+        );
+
+        if (roleToAssign === "admin") {
+          persistAuthorizedAdminEmail(email);
+        }
+
+        return roleToAssign;
+      } catch (dbErr) {
+        console.warn("Firestore user profile sync warning (falling back to registry):", dbErr);
       }
     }
 
-    return false;
+    // 2. Reliable Fallback when Firestore is offline or still initializing
+    if (desiredRole === "admin" || isKnownAdmin) {
+      persistAuthorizedAdminEmail(email);
+      return "admin";
+    }
+
+    return "user";
   };
 
   useEffect(() => {
-    // If Firebase is configured with real credentials, listen to auth state changes
-    if (isFirebaseConfigured && auth) {
-      const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-        setUser(currentUser);
-        if (currentUser) {
-          const adminStatus = await checkIsAdmin(currentUser);
-          setIsAdmin(adminStatus);
-        } else {
-          setIsAdmin(false);
-        }
-        setLoading(false);
-      });
+    if (!isFirebaseConfigured || !auth) {
+      setLoading(false);
+      return;
+    }
 
-      return () => unsubscribe();
-    } else {
-      // Fallback: Check if local demo admin session is active
-      if (typeof window !== "undefined") {
-        const isDemo = localStorage.getItem(DEMO_ADMIN_KEY) === "true";
-        if (isDemo) {
-          const mockUser = {
-            uid: "demo-admin-uid",
-            email: "admin@siec.edu",
-            displayName: "SIEC Lead Admin",
-            photoURL: null,
-            emailVerified: true,
-          } as unknown as User;
-          setUser(mockUser);
-          setIsAdmin(true);
-        }
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (currentUser) {
+        setUser(currentUser);
+        const role = await fetchOrCreateUserRole(currentUser);
+        setUserRole(role);
+        setIsAdmin(role === "admin");
+      } else {
+        setUser(null);
+        setUserRole(null);
+        setIsAdmin(false);
       }
       setLoading(false);
-    }
+    });
+
+    return () => unsubscribe();
   }, []);
 
   // 1. Sign In with Email & Password
   const signInWithEmailAction = async (email: string, pass: string) => {
     setError(null);
     if (!isFirebaseConfigured || !auth) {
-      // If Firebase not configured yet, allow demo admin login
-      if (email.toLowerCase().includes("admin")) {
-        loginAsDemoAdminAction();
-        return;
-      }
       throw new Error(
-        "Firebase is not configured with API credentials yet. Please add your credentials in .env.local or use Demo Admin Sign-In."
+        "Firebase credentials are required. Please configure your .env.local file."
       );
     }
 
     try {
-      const cred = await signInWithEmailAndPassword(auth, email, pass);
-      const adminStatus = await checkIsAdmin(cred.user);
-      setIsAdmin(adminStatus);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      setError(formatAuthError(msg));
-      throw err;
-    }
-  };
+      const cred = await signInWithEmailAndPassword(auth, email.trim(), pass);
+      const role = await fetchOrCreateUserRole(cred.user);
+      setUser(cred.user);
+      setUserRole(role);
+      setIsAdmin(role === "admin");
 
-  // 2. Sign Up with Email & Password
-  const signUpWithEmailAction = async (email: string, pass: string) => {
-    setError(null);
-    if (!isFirebaseConfigured || !auth) {
-      throw new Error(
-        "Firebase credentials needed in .env.local to create accounts."
-      );
-    }
-
-    try {
-      const cred = await createUserWithEmailAndPassword(auth, email, pass);
-      const adminStatus = await checkIsAdmin(cred.user);
-      setIsAdmin(adminStatus);
-
-      // Save user record in Firestore if available
       if (db) {
         try {
           await setDoc(
             doc(db, "users", cred.user.uid),
-            {
-              email: cred.user.email,
-              createdAt: new Date().toISOString(),
-              role: adminStatus ? "admin" : "member",
-            },
+            { lastLoginAt: new Date().toISOString() },
             { merge: true }
           );
-        } catch (dbErr) {
-          console.warn("Could not save user profile to Firestore:", dbErr);
+        } catch {
+          // Non-blocking
         }
       }
     } catch (err: unknown) {
@@ -185,36 +254,131 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // 3. Sign In with Google Popup
+  // 2. Admin Self-Registration (Requires Admin Security Passcode)
+  const signUpAdminAction = async (
+    email: string,
+    pass: string,
+    adminKey: string,
+    displayName?: string
+  ) => {
+    setError(null);
+    if (!isFirebaseConfigured || !auth) {
+      throw new Error(
+        "Firebase credentials are required. Please configure your .env.local file."
+      );
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanKey = adminKey.trim();
+    const expectedKey = ADMIN_AUTH_CONFIG.getAdminRegistrationKey();
+    const isWhitelisted = getAllAuthorizedAdminEmails().includes(cleanEmail);
+
+    // Validate Admin Passcode: Must match or email must be whitelisted
+    if (cleanKey !== expectedKey && !isWhitelisted) {
+      const errorMsg =
+        "Invalid Admin Passcode. To register an Administrator account, you must provide the authorized Admin Security Passcode.";
+      setError(errorMsg);
+      throw new Error(errorMsg);
+    }
+
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, email.trim(), pass);
+
+      if (displayName?.trim()) {
+        try {
+          await updateProfile(cred.user, { displayName: displayName.trim() });
+        } catch {
+          // Non-blocking
+        }
+      }
+
+      // Permanently record in local authorized admins registry
+      persistAuthorizedAdminEmail(cleanEmail);
+
+      // Explicitly store role as "admin" in Firestore
+      const role = await fetchOrCreateUserRole(cred.user, "admin");
+      setUser(cred.user);
+      setUserRole(role);
+      setIsAdmin(true);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setError(formatAuthError(msg));
+      throw err;
+    }
+  };
+
+  // 3. Standard User Registration (Role: user)
+  const signUpUserAction = async (
+    email: string,
+    pass: string,
+    displayName?: string
+  ) => {
+    setError(null);
+    if (!isFirebaseConfigured || !auth) {
+      throw new Error("Firebase credentials are required.");
+    }
+
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, email.trim(), pass);
+
+      if (displayName?.trim()) {
+        try {
+          await updateProfile(cred.user, { displayName: displayName.trim() });
+        } catch {
+          // Non-blocking
+        }
+      }
+
+      const role = await fetchOrCreateUserRole(cred.user, "user");
+      setUser(cred.user);
+      setUserRole(role);
+      setIsAdmin(false);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setError(formatAuthError(msg));
+      throw err;
+    }
+  };
+
+  // 4. Combined Sign-Up Action (backward-compatible)
+  const signUpWithEmailAction = async (
+    email: string,
+    pass: string,
+    adminKey?: string,
+    displayName?: string
+  ) => {
+    if (adminKey && adminKey.trim()) {
+      await signUpAdminAction(email, pass, adminKey, displayName);
+    } else {
+      const isKnownAdmin = getAllAuthorizedAdminEmails().includes(
+        email.trim().toLowerCase()
+      );
+      if (isKnownAdmin) {
+        await signUpAdminAction(
+          email,
+          pass,
+          ADMIN_AUTH_CONFIG.getAdminRegistrationKey(),
+          displayName
+        );
+      } else {
+        await signUpUserAction(email, pass, displayName);
+      }
+    }
+  };
+
+  // 5. Sign In with Google Popup
   const signInWithGoogleAction = async () => {
     setError(null);
     if (!isFirebaseConfigured || !auth) {
-      loginAsDemoAdminAction();
-      return;
+      throw new Error("Firebase credentials are required.");
     }
 
     try {
       const cred = await signInWithPopup(auth, googleProvider);
-      const adminStatus = await checkIsAdmin(cred.user);
-      setIsAdmin(adminStatus);
-
-      if (db) {
-        try {
-          await setDoc(
-            doc(db, "users", cred.user.uid),
-            {
-              email: cred.user.email,
-              displayName: cred.user.displayName,
-              photoURL: cred.user.photoURL,
-              lastLogin: new Date().toISOString(),
-              role: adminStatus ? "admin" : "member",
-            },
-            { merge: true }
-          );
-        } catch (dbErr) {
-          console.warn("Could not sync Google user profile to Firestore:", dbErr);
-        }
-      }
+      const role = await fetchOrCreateUserRole(cred.user);
+      setUser(cred.user);
+      setUserRole(role);
+      setIsAdmin(role === "admin");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       setError(formatAuthError(msg));
@@ -222,14 +386,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // 4. Send Password Reset Email
+  // 6. Send Password Reset Email
   const resetPasswordAction = async (email: string) => {
     setError(null);
     if (!isFirebaseConfigured || !auth) {
-      throw new Error("Firebase credentials needed to send password reset emails.");
+      throw new Error("Firebase credentials are required.");
     }
     try {
-      await sendPasswordResetEmail(auth, email);
+      await sendPasswordResetEmail(auth, email.trim());
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       setError(formatAuthError(msg));
@@ -237,34 +401,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // 5. Sign Out
+  // 7. Sign Out
   const logoutAction = async () => {
     setError(null);
     if (auth && isFirebaseConfigured) {
       await signOut(auth);
     }
-    if (typeof window !== "undefined") {
-      localStorage.removeItem(DEMO_ADMIN_KEY);
-    }
     setUser(null);
+    setUserRole(null);
     setIsAdmin(false);
-  };
-
-  // 6. Demo Admin Login (for local development before adding Firebase keys)
-  const loginAsDemoAdminAction = () => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem(DEMO_ADMIN_KEY, "true");
-    }
-    const mockUser = {
-      uid: "demo-admin-uid",
-      email: "admin@siec.edu",
-      displayName: "SIEC Demo Admin",
-      photoURL: null,
-      emailVerified: true,
-    } as unknown as User;
-    setUser(mockUser);
-    setIsAdmin(true);
-    setError(null);
   };
 
   const clearErrorAction = () => setError(null);
@@ -273,16 +418,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider
       value={{
         user,
+        userRole,
         isAdmin,
         loading,
         error,
         isFirebaseConfigured,
         signInWithEmailAction,
         signUpWithEmailAction,
+        signUpAdminAction,
+        signUpUserAction,
         signInWithGoogleAction,
         resetPasswordAction,
         logoutAction,
-        loginAsDemoAdminAction,
         clearErrorAction,
       }}
     >
@@ -304,20 +451,26 @@ function formatAuthError(errorMsg: string): string {
   if (errorMsg.includes("auth/operation-not-allowed")) {
     return "Email/Password sign-in is disabled in your Firebase Console. Go to Firebase Console > Authentication > Sign-in method and enable 'Email/Password'.";
   }
-  if (errorMsg.includes("auth/api-key-not-valid") || errorMsg.includes("auth/invalid-api-key")) {
-    return "Firebase API key is invalid or not yet active. Please verify your API key in .env.local and restart your dev server.";
+  if (
+    errorMsg.includes("auth/api-key-not-valid") ||
+    errorMsg.includes("auth/invalid-api-key")
+  ) {
+    return "Firebase API key is invalid or not yet active. Please check your credentials in .env.local.";
   }
   if (errorMsg.includes("auth/unauthorized-domain")) {
-    return "Domain (localhost) is not authorized in Firebase. Go to Firebase Console > Authentication > Settings > Authorized domains and ensure 'localhost' is listed.";
+    return "Domain is not authorized in Firebase Console. Go to Authentication > Settings > Authorized domains and add this domain.";
   }
   if (errorMsg.includes("auth/network-request-failed")) {
-    return "Network request failed. Please check your internet connection and Firebase Console configuration.";
+    return "Network request failed. Please check your internet connection.";
   }
-  if (errorMsg.includes("auth/invalid-credential") || errorMsg.includes("auth/wrong-password")) {
-    return "Invalid email or password. Please check your credentials and try again.";
+  if (
+    errorMsg.includes("auth/invalid-credential") ||
+    errorMsg.includes("auth/wrong-password")
+  ) {
+    return "Invalid email or password. Please verify your credentials.";
   }
   if (errorMsg.includes("auth/user-not-found")) {
-    return "No account found with this email address.";
+    return "No account exists with this email address.";
   }
   if (errorMsg.includes("auth/email-already-in-use")) {
     return "An account with this email already exists. Please switch to the 'Sign In' tab.";
@@ -326,7 +479,7 @@ function formatAuthError(errorMsg: string): string {
     return "Password is too weak. Please use at least 6 characters.";
   }
   if (errorMsg.includes("auth/invalid-email")) {
-    return "Please provide a valid email address.";
+    return "Please enter a valid email address.";
   }
   if (errorMsg.includes("auth/popup-closed-by-user")) {
     return "Google sign-in popup was closed before completing.";

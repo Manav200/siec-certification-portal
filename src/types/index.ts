@@ -8,6 +8,8 @@ export interface CsvRow {
 /** An event that certificates can be generated for. */
 export interface CertificateEvent {
   id: string;
+  adminId?: string;            // Owner UID (UID of the Admin who created this event)
+  creatorEmail?: string;       // Admin email address who created this event
   eventName: string;
   category: string;
   eventDate: string;           // ISO 8601 date string
@@ -15,6 +17,8 @@ export interface CertificateEvent {
   baseImageUrl: string;        // URL or data-URI of the certificate template image
   csvData: CsvRow[];
   canvasConfigs?: CanvasConfig[];
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 // ─── Canvas / Template Config Types ─────────────────────────────────────────
@@ -44,4 +48,18 @@ export type EventAction =
 export interface EventStoreState {
   events: CertificateEvent[];
   activeEventId: string | null;
+}
+
+// ─── Authentication & User Roles ────────────────────────────────────────────
+
+export type UserRole = "admin" | "user";
+
+export interface UserProfile {
+  uid: string;
+  email: string;
+  displayName?: string | null;
+  photoURL?: string | null;
+  role: UserRole;
+  createdAt: string;
+  lastLoginAt: string;
 }

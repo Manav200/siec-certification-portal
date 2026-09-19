@@ -1,6 +1,15 @@
 export const ADMIN_AUTH_CONFIG = {
-  // Default passcode for Admin Workspace access
-  PASSCODE: "admin123",
-  // LocalStorage key for storing authentication status
-  STORAGE_KEY: "siec_admin_authenticated",
+  // Default fallback passcode for self-registering as administrator
+  DEFAULT_ADMIN_KEY: "admin123",
+
+  /**
+   * Retrieves the current Admin Registration Key from environment or falls back to default.
+   */
+  getAdminRegistrationKey(): string {
+    const key = process.env.NEXT_PUBLIC_ADMIN_REGISTRATION_KEY;
+    if (key && key.trim()) {
+      return key.trim();
+    }
+    return this.DEFAULT_ADMIN_KEY;
+  },
 };

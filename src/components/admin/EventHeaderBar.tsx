@@ -36,13 +36,18 @@ export default function EventHeaderBar({
                 id="active-event-select"
                 value={activeEvent?.id || ""}
                 onChange={handleEventChange}
-                className="w-full appearance-none rounded-xl border border-gray-200 bg-white/90 px-4 py-2.5 pr-10 text-sm font-semibold text-gray-900 shadow-sm outline-none transition-all duration-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 cursor-pointer"
+                disabled={events.length === 0}
+                className="w-full appearance-none rounded-xl border border-gray-200 bg-white/90 px-4 py-2.5 pr-10 text-sm font-semibold text-gray-900 shadow-sm outline-none transition-all duration-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                {events.map((evt) => (
-                  <option key={evt.id} value={evt.id}>
-                    {evt.eventName} ({evt.category})
-                  </option>
-                ))}
+                {events.length === 0 ? (
+                  <option value="">No events created yet</option>
+                ) : (
+                  events.map((evt) => (
+                    <option key={evt.id} value={evt.id}>
+                      {evt.eventName} ({evt.category})
+                    </option>
+                  ))
+                )}
               </select>
               <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
                 <svg
