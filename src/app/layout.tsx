@@ -3,6 +3,7 @@ import "./globals.css";
 import { EventStoreProvider } from "@/store/useEventStore";
 import { AuthProvider } from "@/context/AuthContext";
 import Header from "@/components/Header";
+import { Analytics } from "@vercel/analytics/next";
 
 export const metadata: Metadata = {
   title: "SIEC Certificate Generator | Multi-Event Certificate Automation",
@@ -26,6 +27,7 @@ export default function RootLayout({
             </div>
           </EventStoreProvider>
         </AuthProvider>
+        <Analytics />
       </body>
     </html>
   );
