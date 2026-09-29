@@ -9,6 +9,7 @@ import EditorToolbar from "@/components/editor/EditorToolbar";
 import AssetImporters from "@/components/editor/AssetImporters";
 import TextFormattingBar from "@/components/editor/TextFormattingBar";
 import InteractiveCanvas from "@/components/editor/InteractiveCanvas";
+import PublishCampaignModal from "@/components/admin/PublishCampaignModal";
 
 export default function CanvasEditorPage() {
   const router = useRouter();
@@ -24,6 +25,7 @@ export default function CanvasEditorPage() {
   const [selectedConfigId, setSelectedConfigId] = useState<string | null>(null);
   const [isPreviewMode, setIsPreviewMode] = useState<boolean>(false);
   const [publishSuccess, setPublishSuccess] = useState<boolean>(false);
+  const [isPublishModalOpen, setIsPublishModalOpen] = useState<boolean>(false);
 
   // Sync state with active event on mount / context switch
   useEffect(() => {
@@ -105,9 +107,21 @@ export default function CanvasEditorPage() {
   const selectedConfig =
     canvasConfigs.find((c) => c.id === selectedConfigId) || null;
 
-  // Save & Publish Campaign Handler
-  const handleSaveAndPublish = () => {
-    const updatedEvent = {
+  // Open Publish & Email Notification Modal
+  const handleOpenPublishModal = () => {
+    const updatedDraft = {
+      ...activeEvent,
+      baseImageUrl: imageUrl,
+      csvData: csvRows.length > 0 ? csvRows : activeEvent.csvData,
+      canvasConfigs: canvasConfigs,
+    };
+    dispatch({ type: "UPDATE_EVENT", payload: updatedDraft });
+    setIsPublishModalOpen(true);
+  };
+
+  // Completed Publish Handler
+  const handlePublishSuccess = () => {
+    const publishedEvent = {
       ...activeEvent,
       baseImageUrl: imageUrl,
       csvData: csvRows.length > 0 ? csvRows : activeEvent.csvData,
@@ -115,12 +129,13 @@ export default function CanvasEditorPage() {
       status: "Published" as const,
     };
 
-    dispatch({ type: "UPDATE_EVENT", payload: updatedEvent });
+    dispatch({ type: "UPDATE_EVENT", payload: publishedEvent });
+    setIsPublishModalOpen(false);
     setPublishSuccess(true);
 
     setTimeout(() => {
       router.push("/admin");
-    }, 1800);
+    }, 1500);
   };
 
   return (
@@ -157,7 +172,7 @@ export default function CanvasEditorPage() {
         event={activeEvent}
         isPreviewMode={isPreviewMode}
         onTogglePreviewAction={() => setIsPreviewMode(!isPreviewMode)}
-        onSaveAndPublishAction={handleSaveAndPublish}
+        onSaveAndPublishAction={handleOpenPublishModal}
       />
 
       {/* 1. Asset Importers (Image Template & CSV/Excel Dropzones) */}
@@ -183,6 +198,15 @@ export default function CanvasEditorPage() {
         isPreviewMode={isPreviewMode}
         onSelectConfigAction={(id) => setSelectedConfigId(id)}
         onUpdateConfigsAction={(configs) => setCanvasConfigs(configs)}
+      />
+
+      {/* Publish & Automated Email Dispatch Modal */}
+      <PublishCampaignModal
+        isOpen={isPublishModalOpen}
+        event={{ ...activeEvent, baseImageUrl: imageUrl, csvData: csvRows, canvasConfigs }}
+        csvRows={csvRows.length > 0 ? csvRows : activeEvent.csvData}
+        onCloseAction={() => setIsPublishModalOpen(false)}
+        onSuccessAction={handlePublishSuccess}
       />
     </div>
   );

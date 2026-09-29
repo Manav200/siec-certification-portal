@@ -17,6 +17,31 @@ interface CertificateViewerProps {
   onClearSearchAction: () => void;
 }
 
+function getCertificateId(event: CertificateEvent, participant: CsvRow): string {
+  const explicit =
+    participant.certificateId ||
+    participant.certId ||
+    participant["Certificate ID"] ||
+    participant["certificate id"] ||
+    participant["Cert ID"];
+  if (explicit) return String(explicit);
+
+  const identifier =
+    participant.email ||
+    participant.Email ||
+    participant.name ||
+    participant.Name ||
+    "SIEC";
+  let hash = 0;
+  for (let i = 0; i < identifier.length; i++) {
+    hash = (hash << 5) - hash + identifier.charCodeAt(i);
+    hash |= 0;
+  }
+  const cleanEventId = event.id.replace(/^evt-/, "").toUpperCase().slice(0, 8);
+  const num = Math.abs(hash % 90000) + 10000;
+  return `SIEC-${cleanEventId}-${num}`;
+}
+
 export default function CertificateViewer({
   matches,
   activeMatchIndex,
@@ -36,6 +61,7 @@ export default function CertificateViewer({
     if (!ctx) return;
 
     const { event, participant } = activeRecord;
+    const certId = getCertificateId(event, participant);
 
     // Default template image if none uploaded
     const imageUrl = event.baseImageUrl || PRESET_TEMPLATES[0].dataUrl;
@@ -130,9 +156,7 @@ export default function CertificateViewer({
                   });
                 break;
               case "Certificate ID":
-                textValue = `CERT-${event.id.replace("evt-", "")}-${Math.floor(
-                  1000 + Math.random() * 9000
-                )}`;
+                textValue = certId;
                 break;
               default: {
                 if (
@@ -186,6 +210,65 @@ export default function CertificateViewer({
   const participantRole =
     participant.role || participant.Role || "Participant";
 
+  const participantEmail = (
+    participant.email ||
+    participant.Email ||
+    participant.EMAIL ||
+    participant["Email Address"] ||
+    participant["email address"] ||
+    participant["Email ID"] ||
+    participant["email id"] ||
+    participant["Mail ID"] ||
+    participant["mail id"] ||
+    participant["Mail"] ||
+    ""
+  )
+    .toString()
+    .trim();
+
+  const certId = getCertificateId(event, participant);
+
+  const rawDate =
+    participant.issueDate ||
+    participant.IssueDate ||
+    participant.date ||
+    participant.Date ||
+    event.eventDate ||
+    new Date().toISOString();
+  const dateObj = new Date(rawDate);
+  const issueYear = isNaN(dateObj.getFullYear())
+    ? new Date().getFullYear()
+    : dateObj.getFullYear();
+  const issueMonth = isNaN(dateObj.getMonth())
+    ? new Date().getMonth() + 1
+    : dateObj.getMonth() + 1;
+
+  // Add to LinkedIn Profile Handler
+  const handleAddToLinkedIn = () => {
+    const origin =
+      typeof window !== "undefined"
+        ? window.location.origin
+        : "https://siec-portal.vercel.app";
+    const certUrl = `${origin}/?event=${encodeURIComponent(
+      event.id
+    )}&email=${encodeURIComponent(participantEmail)}`;
+    const certName = `${event.eventName} E-Certificate`;
+    const orgName = "Student Industry Engagement Community (SIEC)";
+
+    const params = new URLSearchParams({
+      startTask: "CERTIFICATION_NAME",
+      name: certName,
+      organizationName: orgName,
+      issueYear: String(issueYear),
+      issueMonth: String(issueMonth),
+      certUrl: certUrl,
+      certId: String(certId),
+    });
+
+    const linkedInUrl = `https://www.linkedin.com/profile/add?${params.toString()}`;
+    window.open(linkedInUrl, "_blank", "noopener,noreferrer");
+  };
+
   // Download PNG Export
   const handleDownloadPng = () => {
     if (!canvasRef.current) return;
@@ -193,17 +276,6 @@ export default function CertificateViewer({
     const link = document.createElement("a");
     link.download = `SIEC-Certificate-${participantName.replace(/\s+/g, "-")}.png`;
     link.href = canvasRef.current.toDataURL("image/png");
-    link.click();
-    setIsExporting(false);
-  };
-
-  // Download JPG Export
-  const handleDownloadJpg = () => {
-    if (!canvasRef.current) return;
-    setIsExporting(true);
-    const link = document.createElement("a");
-    link.download = `SIEC-Certificate-${participantName.replace(/\s+/g, "-")}.jpg`;
-    link.href = canvasRef.current.toDataURL("image/jpeg", 0.92);
     link.click();
     setIsExporting(false);
   };
@@ -301,11 +373,25 @@ export default function CertificateViewer({
               Download Your Verified Certificate
             </h4>
             <p className="text-xs text-gray-500">
-              Choose your preferred high-resolution format for sharing on LinkedIn or printing.
+              Choose your preferred high-resolution format or add directly to your official LinkedIn profile credentials.
             </p>
           </div>
 
           <div className="flex flex-wrap gap-3">
+            {/* Add to LinkedIn Profile */}
+            <button
+              type="button"
+              onClick={handleAddToLinkedIn}
+              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#0077b5] via-[#0a66c2] to-cyan-600 hover:from-[#006097] hover:to-cyan-700 px-4 py-2.5 text-xs font-bold text-white shadow-md hover:shadow-lg hover:shadow-blue-500/20 transition-all active:scale-95"
+              id="add-linkedin-btn"
+              title="Add this certification to your official LinkedIn profile"
+            >
+              <svg className="h-4 w-4 fill-current" viewBox="0 0 24 24">
+                <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+              </svg>
+              Add to LinkedIn Profile
+            </button>
+
             {/* Download PNG */}
             <button
               type="button"
@@ -318,20 +404,6 @@ export default function CertificateViewer({
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
               </svg>
               Download PNG
-            </button>
-
-            {/* Download JPG */}
-            <button
-              type="button"
-              onClick={handleDownloadJpg}
-              disabled={isExporting}
-              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-4 py-2.5 text-xs font-bold text-white shadow-md hover:opacity-95 transition-all active:scale-95 disabled:opacity-50"
-              id="download-jpg-btn"
-            >
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
-              </svg>
-              Download JPG
             </button>
 
             {/* Download PDF */}

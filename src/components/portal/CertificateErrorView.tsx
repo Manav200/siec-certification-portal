@@ -114,8 +114,8 @@ export default function CertificateErrorView({
               </p>
 
               <div className="mt-4 rounded-xl bg-gray-50 p-4 text-left text-xs space-y-2 border border-gray-100">
-                <p><span className="font-semibold text-gray-700">Support Email:</span> <a href="mailto:support@siec.org" className="text-primary-600 hover:underline font-mono">support@siec.org</a></p>
-                <p><span className="font-semibold text-gray-700">Community Help Desk:</span> SIEC Student Block A, Room 204</p>
+                <p><span className="font-semibold text-gray-700">Support Email:</span> <a href="mailto:teamskillsetu@gitmgurgaon.com" className="text-primary-600 hover:underline font-mono">teamskillsetu@gitmgurgaon.com</a></p>
+                <p><span className="font-semibold text-gray-700">Community Help Desk:</span> SIEC - Student Industry Engagement Community</p>
                 <p><span className="font-semibold text-gray-700">Searched Email:</span> <code className="bg-gray-200 px-1.5 py-0.5 rounded font-mono">{searchedEmail}</code></p>
               </div>
 

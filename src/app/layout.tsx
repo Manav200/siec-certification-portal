@@ -9,6 +9,11 @@ export const metadata: Metadata = {
   title: "SIEC Certificate Generator | Multi-Event Certificate Automation",
   description:
     "Generate, manage, and verify certificates for all SIEC events — workshops, hackathons, seminars, and more.",
+  icons: {
+    icon: "/SIEC_Logo.png",
+    shortcut: "/SIEC_Logo.png",
+    apple: "/SIEC_Logo.png",
+  },
 };
 
 export default function RootLayout({
