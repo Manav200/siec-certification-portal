@@ -24,6 +24,62 @@ export default function AssetImporters({
   const [parseError, setParseError] = useState("");
   const [showRoleEditor, setShowRoleEditor] = useState(false);
 
+  // Participant add/edit modal state
+  const [participantModal, setParticipantModal] = useState<{
+    open: boolean;
+    editIndex: number | null;
+    name: string;
+    email: string;
+    role: string;
+    issueDate: string;
+  }>({
+    open: false,
+    editIndex: null,
+    name: "",
+    email: "",
+    role: "",
+    issueDate: "",
+  });
+
+  const openAddModal = () =>
+    setParticipantModal({
+      open: true,
+      editIndex: null,
+      name: "",
+      email: "",
+      role: "",
+      issueDate: new Date().toISOString().split("T")[0],
+    });
+
+  const openEditModal = (index: number) => {
+    const row = csvRows[index];
+    setParticipantModal({
+      open: true,
+      editIndex: index,
+      name: String(row.name || row.Name || ""),
+      email: String(row.email || row.Email || ""),
+      role: String(row.role || row.Role || ""),
+      issueDate: String(row.issueDate || row.IssueDate || new Date().toISOString().split("T")[0]),
+    });
+  };
+
+  const closeModal = () =>
+    setParticipantModal((s) => ({ ...s, open: false, editIndex: null }));
+
+  const saveParticipant = () => {
+    const { editIndex, name, email, role, issueDate } = participantModal;
+    if (!name.trim() || !email.trim()) return; // basic validation
+    const entry: CsvRow = { name, email, role: role || "Participant", issueDate, Name: name, Email: email, Role: role || "Participant", IssueDate: issueDate };
+    if (editIndex !== null) {
+      const updated = [...csvRows];
+      updated[editIndex] = { ...updated[editIndex], ...entry };
+      onDataParsedAction(updated);
+    } else {
+      onDataParsedAction([...csvRows, entry]);
+    }
+    closeModal();
+  };
+
   // Handle image upload (PNG/JPG)
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -120,16 +176,6 @@ export default function AssetImporters({
   const handleRemoveParticipant = (index: number) => {
     const updated = csvRows.filter((_, i) => i !== index);
     onDataParsedAction(updated);
-  };
-
-  const handleAddParticipant = () => {
-    const newParticipant: CsvRow = {
-      name: "New Participant",
-      email: "new@example.com",
-      role: "Participant",
-      issueDate: new Date().toISOString().split("T")[0],
-    };
-    onDataParsedAction([...csvRows, newParticipant]);
   };
 
   return (
@@ -297,6 +343,85 @@ export default function AssetImporters({
         </div>
       </div>
 
+      {/* Add / Edit Participant Modal */}
+      {participantModal.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 p-6 w-full max-w-md mx-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <h4 className="font-display text-base font-bold text-gray-900">
+                {participantModal.editIndex !== null ? "✏️ Edit Participant" : "➕ Add New Participant"}
+              </h4>
+              <button type="button" onClick={closeModal} className="rounded-lg p-1 text-gray-400 hover:bg-gray-100 transition-colors">
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Full Name <span className="text-red-500">*</span></label>
+                <input
+                  type="text"
+                  value={participantModal.name}
+                  onChange={(e) => setParticipantModal((s) => ({ ...s, name: e.target.value }))}
+                  placeholder="e.g. Manav Mahawar"
+                  autoFocus
+                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-900 outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Email Address <span className="text-red-500">*</span></label>
+                <input
+                  type="email"
+                  value={participantModal.email}
+                  onChange={(e) => setParticipantModal((s) => ({ ...s, email: e.target.value }))}
+                  placeholder="e.g. manav@example.com"
+                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-900 outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Role</label>
+                  <input
+                    type="text"
+                    value={participantModal.role}
+                    onChange={(e) => setParticipantModal((s) => ({ ...s, role: e.target.value }))}
+                    placeholder="e.g. Participant"
+                    className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-900 outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Issue Date</label>
+                  <input
+                    type="date"
+                    value={participantModal.issueDate}
+                    onChange={(e) => setParticipantModal((s) => ({ ...s, issueDate: e.target.value }))}
+                    className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-900 outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {(!participantModal.name.trim() || !participantModal.email.trim()) && (
+              <p className="text-xs text-red-500">Name and Email are required.</p>
+            )}
+
+            <div className="flex justify-end gap-2 pt-1">
+              <button type="button" onClick={closeModal} className="btn-ghost text-sm px-4 py-2">
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={saveParticipant}
+                disabled={!participantModal.name.trim() || !participantModal.email.trim()}
+                className="btn-primary text-sm px-4 py-2 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {participantModal.editIndex !== null ? "Save Changes" : "Add Participant"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Expandable Admin Participant Role Editor Table */}
       {showRoleEditor && (
         <div className="card border border-white/60 p-5 shadow-lg space-y-4 animate-slide-up">
@@ -306,13 +431,13 @@ export default function AssetImporters({
                 Admin Participant &amp; Role Manager
               </h4>
               <p className="text-xs text-gray-500">
-                Customize or override the <span className="font-semibold text-gray-800">Role</span> for individual participants.
+                Add, edit, or remove participants. All fields are fully editable.
               </p>
             </div>
 
             <button
               type="button"
-              onClick={handleAddParticipant}
+              onClick={openAddModal}
               className="btn-primary text-xs px-3 py-1.5"
             >
               + Add Participant
@@ -351,14 +476,24 @@ export default function AssetImporters({
                         />
                       </td>
                       <td className="p-3 text-right">
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveParticipant(index)}
-                          className="rounded-lg p-1 text-red-500 hover:bg-red-50 transition-colors"
-                          title="Remove participant"
-                        >
-                          ✕
-                        </button>
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            type="button"
+                            onClick={() => openEditModal(index)}
+                            className="rounded-lg px-2 py-1 text-[11px] font-semibold text-primary-600 hover:bg-primary-50 border border-primary-100 transition-colors"
+                            title="Edit all details"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveParticipant(index)}
+                            className="rounded-lg p-1 text-red-500 hover:bg-red-50 transition-colors"
+                            title="Remove participant"
+                          >
+                            ✕
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );

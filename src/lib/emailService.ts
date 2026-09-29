@@ -35,220 +35,115 @@ export function buildCertificateEmailHtml({
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Your SIEC E-Certificate is Ready!</title>
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      background-color: #F8FAFC;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-      color: #1E293B;
-      -webkit-font-smoothing: antialiased;
-    }
-    .wrapper {
-      width: 100%;
-      background-color: #F8FAFC;
-      padding: 32px 16px;
-    }
-    .container {
-      max-width: 600px;
-      margin: 0 auto;
-      background: #FFFFFF;
-      border-radius: 16px;
-      overflow: hidden;
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
-      border: 1px solid #E2E8F0;
-    }
-    .header-bar {
-      background: linear-gradient(135deg, #06B6D4 0%, #2563EB 50%, #1D4ED8 100%);
-      padding: 36px 32px;
-      text-align: center;
-    }
-    .logo-badge {
-      display: inline-block;
-      background: rgba(255, 255, 255, 0.2);
-      backdrop-filter: blur(8px);
-      padding: 10px 20px;
-      border-radius: 9999px;
-      border: 1px solid rgba(255, 255, 255, 0.35);
-      margin-bottom: 12px;
-    }
-    .logo-text {
-      color: #FFFFFF;
-      font-size: 16px;
-      font-weight: 800;
-      letter-spacing: 2px;
-      margin: 0;
-    }
-    .header-title {
-      color: #FFFFFF;
-      font-size: 24px;
-      font-weight: 800;
-      margin: 8px 0 0 0;
-      letter-spacing: -0.5px;
-    }
-    .content {
-      padding: 36px 32px;
-    }
-    .greeting {
-      font-size: 18px;
-      font-weight: 700;
-      color: #0F172A;
-      margin-top: 0;
-      margin-bottom: 16px;
-    }
-    .paragraph {
-      font-size: 15px;
-      line-height: 1.65;
-      color: #475569;
-      margin: 0 0 20px 0;
-    }
-    .event-card {
-      background: #F0FDF4;
-      border: 1px solid #BBF7D0;
-      border-radius: 12px;
-      padding: 18px 20px;
-      margin: 24px 0;
-    }
-    .event-card-label {
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: #166534;
-      margin-bottom: 4px;
-    }
-    .event-card-title {
-      font-size: 17px;
-      font-weight: 800;
-      color: #14532D;
-      margin: 0;
-    }
-    .cta-container {
-      text-align: center;
-      margin: 32px 0 28px 0;
-    }
-    .cta-button {
-      display: inline-block;
-      background: linear-gradient(135deg, #06B6D4 0%, #1D4ED8 100%);
-      color: #FFFFFF !important;
-      text-decoration: none;
-      font-size: 15px;
-      font-weight: 700;
-      padding: 14px 32px;
-      border-radius: 12px;
-      box-shadow: 0 4px 14px 0 rgba(6, 182, 212, 0.39);
-      letter-spacing: 0.2px;
-    }
-    .instructions-box {
-      background: #F8FAFC;
-      border: 1px solid #E2E8F0;
-      border-radius: 12px;
-      padding: 18px 20px;
-      margin-bottom: 24px;
-    }
-    .instructions-title {
-      font-size: 13px;
-      font-weight: 700;
-      color: #334155;
-      margin: 0 0 8px 0;
-      display: flex;
-      align-items: center;
-    }
-    .instructions-text {
-      font-size: 13px;
-      line-height: 1.6;
-      color: #64748B;
-      margin: 0;
-    }
-    .footer {
-      background: #F8FAFC;
-      border-top: 1px solid #E2E8F0;
-      padding: 24px 32px;
-      text-align: center;
-    }
-    .footer-org {
-      font-size: 13px;
-      font-weight: 700;
-      color: #475569;
-      margin: 0 0 6px 0;
-    }
-    .footer-note {
-      font-size: 11px;
-      color: #94A3B8;
-      margin: 0;
-      line-height: 1.5;
-    }
-  </style>
+  <title>Your E-Certificate is Ready | SIEC</title>
 </head>
-<body>
-  <div class="wrapper">
-    <div class="container">
-      <!-- Ocean Gradient Header Bar -->
-      <div class="header-bar">
-        <div class="logo-badge">
-          <p class="logo-text">SIEC CERTIFICATION</p>
-        </div>
-        <h1 class="header-title">Official E-Certificate Ready</h1>
-      </div>
+<body style="margin: 0; padding: 0; background-color: #F8FAFC; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #1E293B;">
 
-      <!-- Main Body Content -->
-      <div class="content">
-        <p class="greeting">Dear ${participantName},</p>
-        
-        <p class="paragraph">
-          Congratulations on successfully participating in <strong>${eventName}</strong>! We are thrilled to recognize your dedication, participation, and accomplishments. Your official verified e-certificate has been issued and is ready for download.
-        </p>
+  <!-- Outer Table Wrapper -->
+  <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #F8FAFC; padding: 40px 10px;">
+    <tr>
+      <td align="center">
 
-        <!-- Event Highlight Card -->
-        <div class="event-card">
-          <div class="event-card-label">Certified Event</div>
-          <p class="event-card-title">${eventName}</p>
-        </div>
+        <!-- Main Card Container -->
+        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; background-color: #FFFFFF; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);">
 
-        <!-- Highlighted Action CTA Button -->
-        <div class="cta-container">
-          <a href="${claimUrl}" class="cta-button" target="_blank" rel="noopener noreferrer">
-            Claim &amp; Download Your Certificate →
-          </a>
-        </div>
+          <!-- Ocean Gradient Header -->
+          <tr>
+            <td style="background: #06B6D4; background: linear-gradient(135deg, #06B6D4 0%, #1D4ED8 100%); padding: 36px 24px; text-align: center;">
+              <h1 style="color: #FFFFFF; font-size: 22px; font-weight: 700; margin: 0; letter-spacing: 0.5px;">
+                SIEC | STUDENT INDUSTRY ENGAGEMENT COMMUNITY
+              </h1>
+              <p style="color: #E0F2FE; font-size: 12px; margin: 8px 0 0 0; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600;">
+                Official E-Certificate Portal
+              </p>
+            </td>
+          </tr>
 
-        <!-- Instructions -->
-        <div class="instructions-box">
-          <p class="instructions-title">💡 How to Access &amp; Share:</p>
-          <p class="instructions-text">
-            Enter your registered email address (<strong>${recipient.email}</strong>) on the portal to preview your certificate, download in high-resolution <strong>PNG / PDF</strong>, or add directly to your <strong>LinkedIn Profile</strong> credentials with one click.
-          </p>
-        </div>
+          <!-- Warm Gradient Divider Bar -->
+          <tr>
+            <td style="height: 4px; background: #FFC837; background: linear-gradient(90deg, #FFC837 0%, #FF8008 100%);"></td>
+          </tr>
 
-        <p class="paragraph" style="margin-bottom: 0; font-size: 13px; color: #64748B;">
-          If the button above does not work, copy and paste this verification URL into your browser:<br>
-          <a href="${claimUrl}" style="color: #0284C7; word-break: break-all;">${claimUrl}</a>
-        </p>
+          <!-- Email Content Body -->
+          <tr>
+            <td style="padding: 40px 32px;">
+              <h2 style="color: #0F172A; font-size: 20px; font-weight: 700; margin-top: 0; margin-bottom: 16px;">
+                Congratulations, ${participantName}! 🎉
+              </h2>
 
-        ${
-          adminEmail
-            ? `
-        <div style="margin-top: 24px; padding: 14px 16px; background-color: #F1F5F9; border-left: 4px solid #06B6D4; border-radius: 6px; font-size: 12px; color: #475569; line-height: 1.5;">
-          <strong style="color: #0F172A;">Issued by Event Administrator:</strong> <span style="font-family: monospace;">${adminEmail}</span><br>
-          For queries regarding this certification, you can reply directly to this email.
-        </div>
-        `
-            : ""
-        }
-      </div>
+              <p style="color: #475569; font-size: 15px; line-height: 1.6; margin-bottom: 24px;">
+                We are excited to announce that your official E-Certificate for <strong>${eventName}</strong> has been issued and is now ready for collection!
+              </p>
 
-      <!-- Footer -->
-      <div class="footer">
-        <p class="footer-org">Organized by Student Industry Engagement Community (SIEC)${
-          adminEmail ? ` • Admin: ${adminEmail}` : ""
-        }</p>
-        <p class="footer-note">
-          Official notification from SIEC Certification Portal.
-        </p>
-      </div>
-    </div>
-  </div>
+              <!-- Event Details Info Box -->
+              <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #F1F5F9; border-left: 4px solid #7C3AED; border-radius: 6px; margin-bottom: 32px;">
+                <tr>
+                  <td style="padding: 18px 20px;">
+                    <p style="margin: 0 0 8px 0; font-size: 14px; color: #334155;">
+                      <strong>Event:</strong> ${eventName}
+                    </p>
+                    <p style="margin: 0; font-size: 14px; color: #334155;">
+                      <strong>Registered Email:</strong> ${recipient.email}
+                    </p>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Primary CTA Button (Purple-Teal Gradient) -->
+              <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom: 32px;">
+                <tr>
+                  <td align="center">
+                    <a href="${claimUrl}" target="_blank" style="display: inline-block; background: #7C3AED; background: linear-gradient(135deg, #7C3AED 0%, #10B981 100%); color: #FFFFFF; font-size: 16px; font-weight: 600; text-decoration: none; padding: 14px 32px; border-radius: 8px; box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);">
+                      Claim &amp; Download Certificate
+                    </a>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Features Section -->
+              <p style="color: #475569; font-size: 14px; line-height: 1.6; margin-bottom: 12px;">
+                <strong>On the portal, you can:</strong>
+              </p>
+              <ul style="color: #475569; font-size: 14px; line-height: 1.8; margin-top: 0; padding-left: 20px; margin-bottom: 32px;">
+                <li>Download high-resolution <strong>PNG</strong> or <strong>PDF</strong> formats.</li>
+                <li>Add this certificate directly to your <strong>LinkedIn Profile</strong> certification section in one click.</li>
+              </ul>
+
+              <hr style="border: none; border-top: 1px solid #E2E8F0; margin-bottom: 24px;">
+
+              <!-- Fallback Direct Link -->
+              <p style="color: #64748B; font-size: 12px; line-height: 1.5; margin: 0;">
+                If the button above doesn't work, copy and paste this URL into your browser:<br>
+                <a href="${claimUrl}" style="color: #06B6D4; word-break: break-all; text-decoration: underline;">${claimUrl}</a>
+              </p>
+
+              ${adminEmail ? `
+              <div style="margin-top: 24px; padding: 14px 16px; background-color: #F1F5F9; border-left: 4px solid #06B6D4; border-radius: 6px; font-size: 12px; color: #475569; line-height: 1.5;">
+                <strong style="color: #0F172A;">Issued by Event Administrator:</strong> <span style="font-family: monospace;">${adminEmail}</span><br>
+                For queries regarding this certification, you can reply directly to this email.
+              </div>
+              ` : ""}
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #F8FAFC; padding: 24px 32px; text-align: center; border-top: 1px solid #E2E8F0;">
+              <p style="color: #475569; font-size: 13px; font-weight: 600; margin: 0 0 4px 0;">
+                Student Industry Engagement Community (SIEC)${adminEmail ? ` • Admin: ${adminEmail}` : ""}
+              </p>
+              <p style="color: #94A3B8; font-size: 12px; margin: 0;">
+                Empowering students through industry exposure and practical engagement.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+
+      </td>
+    </tr>
+  </table>
+
 </body>
 </html>
   `.trim();
