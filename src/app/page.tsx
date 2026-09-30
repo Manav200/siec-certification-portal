@@ -20,6 +20,7 @@ function PublicPortalContent() {
   const [searchedEmail, setSearchedEmail] = useState("");
   const [lastSelectedEventId, setLastSelectedEventId] = useState("all");
   const [searchResults, setSearchResults] = useState<MatchRecord[]>([]);
+  const [allPublishedMatches, setAllPublishedMatches] = useState<MatchRecord[]>([]);
   const [activeMatchIndex, setActiveMatchIndex] = useState(0);
 
   const handleSearch = (selectedEventId: string, emailQuery: string) => {
@@ -27,16 +28,11 @@ function PublicPortalContent() {
     setSearchedEmail(emailQuery.trim());
     setLastSelectedEventId(selectedEventId);
     setHasSearched(true);
-    setActiveMatchIndex(0);
 
-    const matches: MatchRecord[] = [];
+    const publishedEvents = events.filter((e) => e.status === "Published");
+    const allMatches: MatchRecord[] = [];
 
-    const targetEvents =
-      selectedEventId === "all"
-        ? events.filter((e) => e.status === "Published")
-        : events.filter((e) => e.id === selectedEventId && e.status === "Published");
-
-    targetEvents.forEach((evt) => {
+    publishedEvents.forEach((evt) => {
       evt.csvData.forEach((row) => {
         const rowEmail = (
           row.email ||
@@ -58,7 +54,7 @@ function PublicPortalContent() {
 
         // Strictly match participant by their registered Mail ID
         if (rowEmail === query) {
-          matches.push({
+          allMatches.push({
             event: evt,
             participant: row,
           });
@@ -66,7 +62,27 @@ function PublicPortalContent() {
       });
     });
 
-    setSearchResults(matches);
+    setAllPublishedMatches(allMatches);
+
+    if (selectedEventId === "all") {
+      setSearchResults(allMatches);
+      setActiveMatchIndex(0);
+    } else {
+      const matchIdx = allMatches.findIndex((m) => m.event.id === selectedEventId);
+      if (matchIdx !== -1) {
+        setSearchResults(allMatches);
+        setActiveMatchIndex(matchIdx);
+      } else {
+        // Participant did not have a certificate in this specific event
+        if (allMatches.length > 0) {
+          setSearchResults(allMatches);
+          setActiveMatchIndex(0);
+        } else {
+          setSearchResults([]);
+          setActiveMatchIndex(0);
+        }
+      }
+    }
   };
 
   const handleSearchAllEvents = () => {
@@ -78,6 +94,7 @@ function PublicPortalContent() {
   const handleClearSearch = () => {
     setHasSearched(false);
     setSearchResults([]);
+    setAllPublishedMatches([]);
     setSearchedEmail("");
   };
 
@@ -127,6 +144,7 @@ function PublicPortalContent() {
             {searchResults.length > 0 ? (
               <CertificateViewer
                 matches={searchResults}
+                allPublishedMatches={allPublishedMatches}
                 activeMatchIndex={activeMatchIndex}
                 onSelectMatchIndexAction={setActiveMatchIndex}
                 onClearSearchAction={handleClearSearch}
