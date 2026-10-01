@@ -13,7 +13,6 @@ export type { MatchRecord };
 
 interface CertificateViewerProps {
   matches: MatchRecord[];
-  allPublishedMatches?: MatchRecord[];
   activeMatchIndex: number;
   onSelectMatchIndexAction: (index: number) => void;
   onClearSearchAction: () => void;
@@ -21,7 +20,6 @@ interface CertificateViewerProps {
 
 export default function CertificateViewer({
   matches,
-  allPublishedMatches,
   activeMatchIndex,
   onSelectMatchIndexAction,
   onClearSearchAction,
@@ -35,11 +33,7 @@ export default function CertificateViewer({
   } | null>(null);
   const [zipNotice, setZipNotice] = useState<string | null>(null);
 
-  // Default to all published matches if available, otherwise current matches
-  const recordsToZip =
-    allPublishedMatches && allPublishedMatches.length > 0
-      ? allPublishedMatches
-      : matches;
+  const recordsToZip = matches;
 
   const activeRecord = matches[activeMatchIndex] || matches[0];
 

@@ -6,11 +6,13 @@ import type { CertificateEvent } from "@/types";
 
 interface EventLookupFormProps {
   events: CertificateEvent[];
+  selectedEventId?: string;
   onSearchAction: (selectedEventId: string, emailQuery: string) => void;
 }
 
 export default function EventLookupForm({
   events,
+  selectedEventId: propSelectedEventId,
   onSearchAction,
 }: EventLookupFormProps) {
   const searchParams = useSearchParams();
@@ -26,8 +28,16 @@ export default function EventLookupForm({
   // Default pre-select: "all" so participants can find their certificate across all events by their mail id
   const defaultEventId = "all";
 
-  const [selectedEventId, setSelectedEventId] = useState<string>(defaultEventId);
+  const [selectedEventId, setSelectedEventId] = useState<string>(
+    propSelectedEventId || defaultEventId
+  );
   const [emailQuery, setEmailQuery] = useState<string>("");
+
+  useEffect(() => {
+    if (propSelectedEventId !== undefined) {
+      setSelectedEventId(propSelectedEventId);
+    }
+  }, [propSelectedEventId]);
 
   // Handle URL deep linking (e.g., /?event=evt-001&email=aarav@example.com)
   useEffect(() => {
