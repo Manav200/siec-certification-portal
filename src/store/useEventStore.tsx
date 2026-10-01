@@ -182,36 +182,38 @@ export function EventStoreProvider({ children }: { children: ReactNode }) {
         // SCENARIO B: Public Participant Portal (Not logged in as Admin)
         currentAdminUid.current = null;
 
-        if (supabase) {
-          try {
-            const { data, error } = await supabase
-              .from("events")
-              .select("*")
-              .eq("status", "Published")
-              .order("created_at", { ascending: false });
-
-            if (!error && data && data.length > 0 && isSubscribed) {
-              const publishedEvents: CertificateEvent[] = data.map(rowToEvent);
-              dispatch({ type: "SET_EVENTS", payload: publishedEvents });
+        try {
+          const res = await fetch("/api/events");
+          if (res.ok && isSubscribed) {
+            const data = await res.json();
+            if (data.events && Array.isArray(data.events)) {
+              dispatch({ type: "SET_EVENTS", payload: data.events });
               try {
                 localStorage.setItem(
                   PUBLIC_PUBLISHED_EVENTS_KEY,
-                  JSON.stringify(publishedEvents)
+                  JSON.stringify(data.events)
                 );
               } catch {}
               return;
             }
-          } catch {}
+          }
+        } catch (fetchErr) {
+          console.warn("[EventStore] Public /api/events fetch error:", fetchErr);
         }
 
-        // Fallback to cached published events for public portal
+        // Fallback to cached published metadata for public portal
         if (typeof window !== "undefined") {
           try {
             const cached = localStorage.getItem(PUBLIC_PUBLISHED_EVENTS_KEY);
             if (cached && isSubscribed) {
               const parsed = JSON.parse(cached);
               if (Array.isArray(parsed)) {
-                dispatch({ type: "SET_EVENTS", payload: parsed });
+                // Strictly ensure csvData is stripped from legacy cached data
+                const sanitized = parsed.map((e: CertificateEvent) => ({
+                  ...e,
+                  csvData: [],
+                }));
+                dispatch({ type: "SET_EVENTS", payload: sanitized });
                 return;
               }
             }

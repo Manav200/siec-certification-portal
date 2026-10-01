@@ -21,54 +21,40 @@ function PublicPortalContent() {
   const [lastSelectedEventId, setLastSelectedEventId] = useState("all");
   const [searchResults, setSearchResults] = useState<MatchRecord[]>([]);
   const [activeMatchIndex, setActiveMatchIndex] = useState(0);
+  const [isSearching, setIsSearching] = useState(false);
 
-  const handleSearch = (selectedEventId: string, emailQuery: string) => {
+  const handleSearch = async (selectedEventId: string, emailQuery: string) => {
     const query = emailQuery.trim().toLowerCase();
     setSearchedEmail(emailQuery.trim());
     setLastSelectedEventId(selectedEventId);
     setHasSearched(true);
     setActiveMatchIndex(0);
+    setIsSearching(true);
 
-    const targetEvents =
-      selectedEventId === "all"
-        ? events.filter((e) => e.status === "Published")
-        : events.filter(
-            (e) => e.id === selectedEventId && e.status === "Published"
-          );
-
-    const matches: MatchRecord[] = [];
-
-    targetEvents.forEach((evt) => {
-      evt.csvData.forEach((row) => {
-        const rowEmail = (
-          row.email ||
-          row.Email ||
-          row.EMAIL ||
-          row["Email Address"] ||
-          row["email address"] ||
-          row["Email ID"] ||
-          row["email id"] ||
-          row["Mail ID"] ||
-          row["mail id"] ||
-          row["Mail"] ||
-          row["mail"] ||
-          ""
-        )
-          .toString()
-          .trim()
-          .toLowerCase();
-
-        // Strictly match participant by their registered Mail ID
-        if (rowEmail === query) {
-          matches.push({
-            event: evt,
-            participant: row,
-          });
-        }
+    try {
+      const res = await fetch("/api/certificates/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: query,
+          eventId: selectedEventId === "all" ? undefined : selectedEventId,
+        }),
       });
-    });
 
-    setSearchResults(matches);
+      if (res.ok) {
+        const data = await res.json();
+        const matches: MatchRecord[] =
+          data.matches || (data.match ? [data.match] : []);
+        setSearchResults(matches);
+      } else {
+        setSearchResults([]);
+      }
+    } catch (err) {
+      console.error("[Search] Certificate verification error:", err);
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
   };
 
   const handleSearchAllEvents = () => {
@@ -127,7 +113,22 @@ function PublicPortalContent() {
         {/* Results Area */}
         {hasSearched && (
           <div className="mt-12">
-            {searchResults.length > 0 ? (
+            {isSearching ? (
+              <div className="mx-auto max-w-md rounded-2xl border border-gray-200 bg-white/90 p-8 text-center shadow-lg backdrop-blur-md animate-fade-in">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-r from-cyan-500 to-emerald-500 text-white shadow-md">
+                  <svg className="h-6 w-6 animate-spin" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth={4} />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                </div>
+                <h3 className="mt-4 font-display text-base font-bold text-gray-900">
+                  Verifying Certificate Record...
+                </h3>
+                <p className="mt-1 text-xs text-gray-500">
+                  Querying the secure database for verified credentials.
+                </p>
+              </div>
+            ) : searchResults.length > 0 ? (
               <CertificateViewer
                 matches={searchResults}
                 activeMatchIndex={activeMatchIndex}

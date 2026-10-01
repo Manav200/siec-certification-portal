@@ -33,15 +33,36 @@ CREATE TABLE IF NOT EXISTS public.users (
 ALTER TABLE public.events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 
--- 4. Policies for Events
-CREATE POLICY "Public attendees can read published events"
-  ON public.events FOR SELECT
-  USING (status = 'Published');
+-- 4. Secure Row-Level Security (RLS) Policies for Events
+-- CRITICAL SECURITY: Never allow public client SELECT on public.events (contains sensitive student csv_data)
+DROP POLICY IF EXISTS "Public attendees can read published events" ON public.events;
+DROP POLICY IF EXISTS "Admins can manage their events" ON public.events;
 
-CREATE POLICY "Admins can manage their events"
-  ON public.events FOR ALL
-  USING (true)
-  WITH CHECK (true);
+-- Authenticated Admins can only read and manage their own event records
+CREATE POLICY "Admins can view their own events"
+  ON public.events FOR SELECT
+  USING (auth.uid()::text = admin_id);
+
+CREATE POLICY "Admins can insert their own events"
+  ON public.events FOR INSERT
+  WITH CHECK (auth.uid()::text = admin_id);
+
+CREATE POLICY "Admins can update their own events"
+  ON public.events FOR UPDATE
+  USING (auth.uid()::text = admin_id)
+  WITH CHECK (auth.uid()::text = admin_id);
+
+CREATE POLICY "Admins can delete their own events"
+  ON public.events FOR DELETE
+  USING (auth.uid()::text = admin_id);
+
+-- 5. Public Events Sanitized View (Excludes csv_data, admin_id, and creator_email)
+CREATE OR REPLACE VIEW public.public_events AS
+  SELECT id, event_name, category, event_date, status, base_image_url, canvas_configs, created_at
+  FROM public.events
+  WHERE status = 'Published';
+
+GRANT SELECT ON public.public_events TO anon, authenticated;
 
 -- 5. Policies for Users
 CREATE POLICY "Users can manage user profiles"
