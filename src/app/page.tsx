@@ -1,9 +1,8 @@
 "use client";
 
-import React, { useState, Suspense } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import SiecLogo from "@/components/SiecLogo";
-import { useEventStore } from "@/store/useEventStore";
 import type { CertificateEvent, CsvRow } from "@/types";
 
 import EventLookupForm from "@/components/portal/EventLookupForm";
@@ -13,8 +12,52 @@ import CertificateViewer, {
 import CertificateErrorView from "@/components/portal/CertificateErrorView";
 
 function PublicPortalContent() {
-  const { state } = useEventStore();
-  const { events } = state;
+  const [events, setEvents] = useState<CertificateEvent[]>([]);
+
+  // Always load ALL published events on the public portal tab,
+  // even when the user is logged into an admin account.
+  useEffect(() => {
+    let isSubscribed = true;
+
+    // Fast initial hydration from localStorage cache
+    if (typeof window !== "undefined") {
+      try {
+        const cached = localStorage.getItem("siec_public_published_events");
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setEvents(parsed);
+          }
+        }
+      } catch {}
+    }
+
+    async function loadAllPublishedEvents() {
+      try {
+        const res = await fetch("/api/events");
+        if (res.ok && isSubscribed) {
+          const data = await res.json();
+          if (Array.isArray(data.events)) {
+            setEvents(data.events);
+            try {
+              localStorage.setItem(
+                "siec_public_published_events",
+                JSON.stringify(data.events)
+              );
+            } catch {}
+          }
+        }
+      } catch (err) {
+        console.warn("[PublicPortal] Failed to load published events:", err);
+      }
+    }
+
+    loadAllPublishedEvents();
+
+    return () => {
+      isSubscribed = false;
+    };
+  }, []);
 
   const [hasSearched, setHasSearched] = useState(false);
   const [searchedEmail, setSearchedEmail] = useState("");
@@ -31,6 +74,9 @@ function PublicPortalContent() {
     setActiveMatchIndex(0);
     setIsSearching(true);
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 12000);
+
     try {
       const res = await fetch("/api/certificates/verify", {
         method: "POST",
@@ -39,7 +85,10 @@ function PublicPortalContent() {
           email: query,
           eventId: selectedEventId === "all" ? undefined : selectedEventId,
         }),
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       if (res.ok) {
         const data = await res.json();
@@ -50,6 +99,7 @@ function PublicPortalContent() {
         setSearchResults([]);
       }
     } catch (err) {
+      clearTimeout(timeoutId);
       console.error("[Search] Certificate verification error:", err);
       setSearchResults([]);
     } finally {
@@ -122,10 +172,10 @@ function PublicPortalContent() {
                   </svg>
                 </div>
                 <h3 className="mt-4 font-display text-base font-bold text-gray-900">
-                  Verifying Certificate Record...
+                  Finding Your Certificate...
                 </h3>
                 <p className="mt-1 text-xs text-gray-500">
-                  Querying the secure database for verified credentials.
+                  Checking participation records for your registered email.
                 </p>
               </div>
             ) : searchResults.length > 0 ? (

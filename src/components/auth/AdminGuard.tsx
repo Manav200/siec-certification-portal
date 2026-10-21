@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
@@ -16,11 +16,34 @@ export default function AdminGuard({ children }: AdminGuardProps) {
   const pathname = usePathname();
 
   useEffect(() => {
-    // If finished loading and no user is logged in, redirect to login page
+    // If finished loading and no user is logged in, redirect to admin login page
     if (!loading && !user) {
       router.push(`/admin/login?redirect=${encodeURIComponent(pathname)}`);
     }
   }, [user, loading, router, pathname]);
+
+  useEffect(() => {
+    // If authenticated but NOT an admin, auto-redirect to the Public Portal
+    // after a brief delay so the user can read the access-denied message.
+    if (!loading && user && !isAdmin) {
+      const timer = setTimeout(() => {
+        router.push("/");
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [user, isAdmin, loading, router]);
+
+  // Countdown display for the non-admin redirect
+  const [countdown, setCountdown] = useState(3);
+  useEffect(() => {
+    if (!loading && user && !isAdmin) {
+      setCountdown(3);
+      const interval = setInterval(() => {
+        setCountdown((c) => Math.max(0, c - 1));
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [user, isAdmin, loading]);
 
   // 1. Loading State
   if (loading) {
@@ -95,6 +118,13 @@ export default function AdminGuard({ children }: AdminGuardProps) {
           </div>
 
           <div className="mt-6 flex flex-col gap-2">
+            <div className="flex items-center justify-center gap-2 rounded-xl bg-red-50 border border-red-100 px-4 py-2.5 text-xs text-red-600 font-semibold">
+              <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+              </svg>
+              Redirecting to Portal in {countdown}s&hellip;
+            </div>
             <button
               onClick={() => logoutAction()}
               className="btn-primary w-full text-xs py-2.5 font-bold cursor-pointer"
@@ -102,7 +132,7 @@ export default function AdminGuard({ children }: AdminGuardProps) {
               Sign Out &amp; Switch to Admin Account
             </button>
             <Link href="/" className="btn-secondary w-full text-center text-xs py-2">
-              Back to Certificate Portal
+              Go to Certificate Portal Now
             </Link>
           </div>
         </div>

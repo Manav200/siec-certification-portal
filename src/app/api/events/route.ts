@@ -21,10 +21,10 @@ export async function GET() {
       return NextResponse.json({ events: [] });
     }
 
-    // Query ONLY public metadata columns - exclude csv_data, admin_id, creator_email
+    // Query ONLY public metadata columns - exclude heavy base_image_url, csv_data, admin_id, creator_email
     const { data, error } = await supabase
       .from("events")
-      .select("id, event_name, category, event_date, status, base_image_url, canvas_configs")
+      .select("id, event_name, category, event_date, status, canvas_configs")
       .eq("status", "Published")
       .order("created_at", { ascending: false });
 
@@ -43,7 +43,7 @@ export async function GET() {
       category: row.category || "Workshop",
       eventDate: row.event_date || "",
       status: (row.status || "Published") as "Draft" | "Published",
-      baseImageUrl: row.base_image_url || "",
+      baseImageUrl: "", // Excluded from listing for high speed; populated dynamically on verification
       canvasConfigs: row.canvas_configs || [],
       csvData: [], // Explicitly empty array to ensure zero PII leakage
     }));

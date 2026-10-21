@@ -89,21 +89,15 @@ export function resolveFieldText(
     case "Participant Name":
       return (
         participant.name ||
-        participant.Name ||
-        participant["Participant Name"] ||
-        participant["participant name"] ||
         "Valued Participant"
       );
     case "Event Name":
       return event.eventName;
     case "Role":
-      return participant.role || participant.Role || "Participant";
+      return participant.role || "Participant";
     case "Issue Date":
       return (
         participant.issueDate ||
-        participant.IssueDate ||
-        participant.date ||
-        participant.Date ||
         new Date(event.eventDate).toLocaleDateString("en-IN", {
           day: "numeric",
           month: "short",

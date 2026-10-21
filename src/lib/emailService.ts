@@ -15,115 +15,50 @@ export interface SendCertificateEmailParams {
 }
 
 /**
- * Builds the official SIEC responsive HTML email template
+ * Builds the ultra-minimal spam-proof SIEC certificate notification email.
+ * No images, no gradients, no buttons, no emojis — plain inline-linked text only.
  */
 export function buildCertificateEmailHtml({
   recipient,
   eventId,
   eventName,
   portalBaseUrl,
-  adminEmail,
 }: SendCertificateEmailParams): string {
   const participantName = recipient.name || "Valued Participant";
-  const claimUrl = `${portalBaseUrl.replace(/\/$/, "")}/?event=${encodeURIComponent(
+  const role = recipient.role || "Participant";
+  const certificateUrl = `${portalBaseUrl.replace(/\/$/, "")}/?event=${encodeURIComponent(
     eventId
   )}&email=${encodeURIComponent(recipient.email)}`;
 
-  return `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Certificate Access - SIEC</title>
-</head>
-<body style="margin: 0; padding: 0; background-color: #f4f6f8; font-family: Arial, sans-serif; color: #333333;">
+  return `<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"></head>
+<body style="font-family: Arial, sans-serif; color: #222222; line-height: 1.5; padding: 20px;">
+  <!-- Event Heading -->
+        <h1 style="font-size: 20px; font-weight: bold; color: #0f172a; margin-top: 0; margin-bottom: 20px; text-align: center;">
+          {{Event_Name}}
+        </h1>
 
-  <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f4f6f8; padding: 30px 10px;">
-    <tr>
-      <td align="center">
+        <!-- Participant Message -->
+        <p style="font-size: 15px; color: #334155; margin-bottom: 16px;">
+          Hello {{Participant_Name}},
+        </p>
 
-        <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 580px; background-color: #ffffff; border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0;">
+        <p style="font-size: 14px; color: #475569; margin-bottom: 20px;">
+          Congratulations on your active contribution as <strong>{{Role}}</strong> in <strong>{{Event_Name}}</strong>, organized by {{Organizing_Community_Name}}.
+        </p>
 
-          <!-- Solid Header -->
-          <tr>
-            <td style="background-color: #1d4ed8; padding: 24px; text-align: left;">
-              <span style="color: #ffffff; font-size: 18px; font-weight: bold; letter-spacing: 0.5px;">
-                Student Industry Engagement Community (SIEC)
-              </span>
-            </td>
-          </tr>
+        <!-- Direct Certificate Link -->
+        <p style="font-size: 14px; color: #475569; margin-bottom: 24px;">
+          Your official participation <a href="{{Certificate_URL}}" style="color: #2563eb; text-decoration: underline; font-weight: bold;">Certificate</a> is now live and ready to view on the portal.
+        </p>
 
-          <!-- Body Content -->
-          <tr>
-            <td style="padding: 30px 24px;">
-              <p style="font-size: 15px; color: #333333; margin-top: 0; margin-bottom: 16px;">
-                Hello ${participantName},
-              </p>
-
-              <p style="font-size: 14px; color: #4a5568; line-height: 1.5; margin-bottom: 20px;">
-                Your participation certificate for <strong>${eventName}</strong> is now available on the official SIEC portal.
-              </p>
-
-              <!-- Info Box -->
-              <table border="0" cellpadding="0" cellspacing="0" width="100%" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; margin-bottom: 24px;">
-                <tr>
-                  <td style="padding: 16px;">
-                    <p style="margin: 0 0 6px 0; font-size: 13px; color: #4a5568;">
-                      <strong>Event:</strong> ${eventName}
-                    </p>
-                    <p style="margin: 0; font-size: 13px; color: #4a5568;">
-                      <strong>Registered Email:</strong> ${recipient.email}
-                    </p>
-                  </td>
-                </tr>
-              </table>
-
-              <!-- CTA Button -->
-              <table border="0" cellpadding="0" cellspacing="0" width="100%" style="margin-bottom: 24px;">
-                <tr>
-                  <td align="left">
-                    <a href="${claimUrl}" target="_blank" style="display: inline-block; background-color: #10b981; color: #ffffff; font-size: 14px; font-weight: bold; text-decoration: none; padding: 12px 24px; border-radius: 6px;">
-                      Access Certificate
-                    </a>
-                  </td>
-                </tr>
-              </table>
-
-              <p style="font-size: 13px; color: #718096; line-height: 1.5; margin-bottom: 0;">
-                Through the portal, you can download your document in PNG or PDF format, or link it directly to your LinkedIn profile credentials.
-              </p>
-
-              ${adminEmail ? `
-              <div style="margin-top: 20px; padding: 12px 14px; background-color: #f8fafc; border-left: 3px solid #1d4ed8; border-radius: 4px; font-size: 12px; color: #4a5568; line-height: 1.5;">
-                <strong>Issued by:</strong> ${adminEmail}<br>
-                For any queries, you may reply directly to this email.
-              </div>
-              ` : ""}
-            </td>
-          </tr>
-
-          <!-- Footer -->
-          <tr>
-            <td style="background-color: #f8fafc; padding: 20px 24px; text-align: left; border-top: 1px solid #e2e8f0;">
-              <p style="color: #718096; font-size: 12px; margin: 0 0 4px 0;">
-                Student Industry Engagement Community (SIEC)${adminEmail ? ` • ${adminEmail}` : ""}
-              </p>
-              <p style="color: #a0aec0; font-size: 11px; margin: 0;">
-                This is an automated operational email regarding your event participation record.
-              </p>
-            </td>
-          </tr>
-
-        </table>
-
-      </td>
-    </tr>
-  </table>
-
+        <!-- Social / Tagging CTA -->
+        <p style="font-size: 13px; color: #334155; margin: 0;">
+          Sharing your achievement on social media? Be sure to tag <a href="https://www.linkedin.com/company/siec-community/" style="color: #0284c7; font-weight: bold; text-decoration: none;">SIEC Community</a> on LinkedIn so we can re-share and celebrate your accomplishment!
+        </p>
 </body>
-</html>
-  `.trim();
+</html>`.trim();
 }
 
 /**

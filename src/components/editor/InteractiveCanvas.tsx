@@ -82,17 +82,23 @@ export default function InteractiveCanvas({
     };
   }, [viewMode]);
 
-  // 1. Extract all unique column headers from uploaded CSV/Excel data
+  // 1. Extract all unique column headers from uploaded CSV/Excel data, deduped by
+  //    normalized (lowercase-trimmed) key so variants like "Role" + "role" collapse into one.
   const sheetColumns = React.useMemo(() => {
     if (!event.csvData || event.csvData.length === 0) return [];
-    const keysSet = new Set<string>();
+    const seenLower = new Set<string>();
+    const unique: string[] = [];
     event.csvData.forEach((row) => {
       Object.keys(row).forEach((k) => {
         const trimmed = k.trim();
-        if (trimmed) keysSet.add(trimmed);
+        const lower = trimmed.toLowerCase();
+        if (trimmed && !seenLower.has(lower)) {
+          seenLower.add(lower);
+          unique.push(trimmed); // keep the first casing encountered
+        }
       });
     });
-    return Array.from(keysSet);
+    return unique;
   }, [event.csvData]);
 
   // Sample participant row for live preview

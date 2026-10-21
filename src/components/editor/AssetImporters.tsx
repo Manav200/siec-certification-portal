@@ -6,6 +6,47 @@ import * as XLSX from "xlsx";
 import { PRESET_TEMPLATES, type PresetTemplate } from "@/utils/defaultTemplates";
 import type { CsvRow } from "@/types";
 
+// ─── Canonical field aliases ──────────────────────────────────────────────────
+// Maps any column header variant → single lowercase canonical key.
+const FIELD_ALIASES: Record<string, string> = {
+  // name variants
+  name: "name", Name: "name", NAME: "name",
+  "participant name": "name", "Participant Name": "name", "PARTICIPANT NAME": "name",
+  participantname: "name", ParticipantName: "name",
+  // email variants
+  email: "email", Email: "email", EMAIL: "email",
+  "e-mail": "email", "E-Mail": "email", "E-mail": "email",
+  "email address": "email", "Email Address": "email",
+  // role variants
+  role: "role", Role: "role", ROLE: "role",
+  designation: "role", Designation: "role", DESIGNATION: "role",
+  "participant role": "role", "Participant Role": "role",
+  // issueDate variants
+  issuedate: "issueDate", IssueDate: "issueDate", ISSUEDATE: "issueDate",
+  "issue date": "issueDate", "Issue Date": "issueDate", "ISSUE DATE": "issueDate",
+  date: "issueDate", Date: "issueDate", DATE: "issueDate",
+};
+
+/**
+ * Normalizes a raw CSV/Excel row by:
+ * 1. Lowercasing + trimming all keys.
+ * 2. Mapping known column variants to a single canonical key.
+ * 3. Removing duplicate keys that resolved to the same canonical form.
+ */
+function normalizeRow(raw: Record<string, string>): CsvRow {
+  const out: CsvRow = {};
+  for (const [key, value] of Object.entries(raw)) {
+    const trimmed = key.trim();
+    // Use alias map first, then fall back to lowercase-trimmed key
+    const canonical = FIELD_ALIASES[trimmed] ?? FIELD_ALIASES[trimmed.toLowerCase()] ?? trimmed.toLowerCase();
+    // First write wins (preserves order; avoids overwriting with worse-cased dupe)
+    if (!(canonical in out)) {
+      out[canonical] = String(value ?? "");
+    }
+  }
+  return out;
+}
+
 interface AssetImportersProps {
   currentImageUrl: string;
   csvRows: CsvRow[];
@@ -23,6 +64,7 @@ export default function AssetImporters({
   const [dataFileName, setDataFileName] = useState("");
   const [parseError, setParseError] = useState("");
   const [showRoleEditor, setShowRoleEditor] = useState(false);
+  const [bulkRole, setBulkRole] = useState("");
 
   // Participant add/edit modal state
   const [participantModal, setParticipantModal] = useState<{
@@ -56,10 +98,10 @@ export default function AssetImporters({
     setParticipantModal({
       open: true,
       editIndex: index,
-      name: String(row.name || row.Name || ""),
-      email: String(row.email || row.Email || ""),
-      role: String(row.role || row.Role || ""),
-      issueDate: String(row.issueDate || row.IssueDate || new Date().toISOString().split("T")[0]),
+      name: String(row.name || ""),
+      email: String(row.email || ""),
+      role: String(row.role || ""),
+      issueDate: String(row.issueDate || new Date().toISOString().split("T")[0]),
     });
   };
 
@@ -69,7 +111,7 @@ export default function AssetImporters({
   const saveParticipant = () => {
     const { editIndex, name, email, role, issueDate } = participantModal;
     if (!name.trim() || !email.trim()) return; // basic validation
-    const entry: CsvRow = { name, email, role: role || "Participant", issueDate, Name: name, Email: email, Role: role || "Participant", IssueDate: issueDate };
+    const entry: CsvRow = { name, email, role: role || "Participant", issueDate };
     if (editIndex !== null) {
       const updated = [...csvRows];
       updated[editIndex] = { ...updated[editIndex], ...entry };
@@ -120,12 +162,12 @@ export default function AssetImporters({
     const fileExt = file.name.split(".").pop()?.toLowerCase();
 
     if (fileExt === "csv") {
-      Papa.parse<CsvRow>(file, {
+      Papa.parse<Record<string, string>>(file, {
         header: true,
         skipEmptyLines: true,
         complete: (results) => {
           if (results.data && results.data.length > 0) {
-            onDataParsedAction(results.data);
+            onDataParsedAction(results.data.map(normalizeRow));
           } else {
             setParseError("The uploaded CSV file contains no valid rows.");
           }
@@ -142,12 +184,12 @@ export default function AssetImporters({
           const workbook = XLSX.read(buffer, { type: "binary" });
           const firstSheetName = workbook.SheetNames[0];
           const worksheet = workbook.Sheets[firstSheetName];
-          const jsonData = XLSX.utils.sheet_to_json<CsvRow>(worksheet, {
+          const jsonData = XLSX.utils.sheet_to_json<Record<string, string>>(worksheet, {
             defval: "",
           });
 
           if (jsonData.length > 0) {
-            onDataParsedAction(jsonData);
+            onDataParsedAction(jsonData.map(normalizeRow));
           } else {
             setParseError("The uploaded Excel file contains no valid rows.");
           }
@@ -168,9 +210,16 @@ export default function AssetImporters({
     updated[index] = {
       ...updated[index],
       role: newRole,
-      Role: newRole,
     };
     onDataParsedAction(updated);
+  };
+
+  /** Applies bulkRole to every loaded participant at once */
+  const handleBulkRoleApply = () => {
+    const trimmed = bulkRole.trim();
+    if (!trimmed || csvRows.length === 0) return;
+    onDataParsedAction(csvRows.map((row) => ({ ...row, role: trimmed })));
+    setBulkRole("");
   };
 
   const handleRemoveParticipant = (index: number) => {
@@ -444,6 +493,27 @@ export default function AssetImporters({
             </button>
           </div>
 
+          {/* Bulk Role Change */}
+          <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5">
+            <span className="text-xs font-semibold text-amber-700 whitespace-nowrap">Bulk Change Roles:</span>
+            <input
+              type="text"
+              value={bulkRole}
+              onChange={(e) => setBulkRole(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleBulkRoleApply()}
+              placeholder='e.g. "Volunteer", "Organizer", "Participant"'
+              className="flex-1 min-w-0 rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-xs text-gray-900 outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-400"
+            />
+            <button
+              type="button"
+              onClick={handleBulkRoleApply}
+              disabled={!bulkRole.trim() || csvRows.length === 0}
+              className="shrink-0 rounded-lg bg-amber-500 px-3 py-1.5 text-xs font-bold text-white hover:bg-amber-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Apply to All
+            </button>
+          </div>
+
           <div className="overflow-x-auto max-h-60 rounded-xl border border-gray-200">
             <table className="w-full text-left text-xs">
               <thead className="bg-gray-100/80 sticky top-0 border-b border-gray-200 text-gray-700 font-semibold uppercase tracking-wider">
@@ -457,9 +527,9 @@ export default function AssetImporters({
               </thead>
               <tbody className="divide-y divide-gray-100 bg-white">
                 {csvRows.map((row, index) => {
-                  const currentRole = row.role || row.Role || "Participant";
-                  const pName = row.name || row.Name || "Participant";
-                  const pEmail = row.email || row.Email || "";
+                  const currentRole = row.role || "Participant";
+                  const pName = row.name || "Participant";
+                  const pEmail = row.email || "";
 
                   return (
                     <tr key={index} className="hover:bg-gray-50/50 transition-colors">
