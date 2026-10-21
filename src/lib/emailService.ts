@@ -35,26 +35,26 @@ export function buildCertificateEmailHtml({
 <head><meta charset="UTF-8"></head>
 <body style="font-family: Arial, sans-serif; color: #222222; line-height: 1.5; padding: 20px;">
   <!-- Event Heading -->
-        <h1 style="font-size: 20px; font-weight: bold; color: #0f172a; margin-top: 0; margin-bottom: 20px; text-align: center;">
-          {{Event_Name}}
+        <h1 style="font-size: 100px; font-weight: bold; color: #0f172a; margin-top: 0; margin-bottom: 20px; text-align: center;">
+          ${eventName}
         </h1>
 
         <!-- Participant Message -->
-        <p style="font-size: 15px; color: #334155; margin-bottom: 16px;">
-          Hello {{Participant_Name}},
+        <p style="font-size: 28px; color: #334155; margin-bottom: 16px;">
+          Hello ${participantName},
         </p>
 
-        <p style="font-size: 14px; color: #475569; margin-bottom: 20px;">
-          Congratulations on your active contribution as <strong>{{Role}}</strong> in <strong>{{Event_Name}}</strong>, organized by {{Organizing_Community_Name}}.
+        <p style="font-size: 24px; color: #475569; margin-bottom: 20px;">
+          Congratulations on your contribution as <strong>${role}</strong> in <strong>${eventName}</strong>.
         </p>
 
         <!-- Direct Certificate Link -->
-        <p style="font-size: 14px; color: #475569; margin-bottom: 24px;">
-          Your official participation <a href="{{Certificate_URL}}" style="color: #2563eb; text-decoration: underline; font-weight: bold;">Certificate</a> is now live and ready to view on the portal.
+        <p style="font-size: 32px; color: #475569; margin-bottom: 24px;">
+          Your official participation <a href="${certificateUrl}" style="color: #2563eb; text-decoration: underline; font-weight: bold;">Certificate</a> is now live and ready to view on the portal.
         </p>
 
         <!-- Social / Tagging CTA -->
-        <p style="font-size: 13px; color: #334155; margin: 0;">
+        <p style="font-size: 20px; color: #334155; margin: 0;">
           Sharing your achievement on social media? Be sure to tag <a href="https://www.linkedin.com/company/siec-community/" style="color: #0284c7; font-weight: bold; text-decoration: none;">SIEC Community</a> on LinkedIn so we can re-share and celebrate your accomplishment!
         </p>
 </body>

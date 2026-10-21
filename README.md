@@ -173,5 +173,5 @@ src/
 
 ## 📄 License
 
-Maintained by **Student Industry Engagement Community (SIEC)** — GIT Gurugram.  
+Maintained by **Student Industry Engagement Community (SIEC)**.  
 For questions or support, reach out to [teamskillsetu@gitmgurgaon.com](mailto:teamskillsetu@gitmgurgaon.com).
