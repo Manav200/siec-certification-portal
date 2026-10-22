@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
       }
 
       const outcome = await sendSingleCertificateEmail({
-        recipient: { name, email },
+        recipient: { name, email, role: recipient.role },
         eventId,
         eventName,
         portalBaseUrl: cleanBaseUrl,
