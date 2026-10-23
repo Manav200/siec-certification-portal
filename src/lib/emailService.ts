@@ -40,58 +40,49 @@ export function buildCertificateEmailHtml({
   <title>Certificate Access - ${eventName}</title>
 </head>
 <body style="margin: 0; padding: 20px; font-family: Arial, sans-serif; background-color: #f8fafc; color: #1e293b; line-height: 1.6;">
-  
-  <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 560px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 32px;">
-    <tr>
-      <td>
-        <div style="background-color: #f8fafc; padding: 32px 16px; font-family: Arial, Helvetica, sans-serif;">
-          <div style="max-width: 560px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 36px 32px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
-
-            <!-- SIEC Community Header Logo -->
-            <img src="cid:siec-horizontal-logo" alt="SIEC Community Logo" width="440" style="display: block; margin: 0 auto 24px; max-width: 100%; width: 440px; height: auto; border: 0; outline: none; text-decoration: none;">
+    <div style="background-color: #f8fafc; padding: 20px 10px; font-family: Arial, Helvetica, sans-serif;">
+      <div style="max-width: 480px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px 32px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);">
+        
+        <!-- SIEC Community Header Logo -->
+        <img src="cid:siec-horizontal-logo" alt="SIEC Community Logo" width="440" style="display: block; margin: 0 auto 24px; max-width: 100%; width: 440px; height: auto; border: 0; outline: none; text-decoration: none;">
             
-            <!-- Event Heading -->
-            <h1 style="font-size: 28px; font-weight: 800; color: #0f172a; margin-top: 0; margin-bottom: 24px; text-align: center; line-height: 1.3; font-family: Arial, Helvetica, sans-serif; letter-spacing: -0.5px;">
-              ${eventName}
-            </h1>
+        <!-- Event Heading -->
+        <h1 style="font-size: 36px; font-weight: 800; color: #0f172a; margin-top: 0; margin-bottom: 12px; text-align: center; line-height: 1.3; font-family: Arial, Helvetica, sans-serif; letter-spacing: -0.5px;">
+          ${eventName}
+        </h1>
 
-            <!-- Participant Message -->
-            <p style="font-size: 16px; font-weight: 600; color: #1e293b; margin-bottom: 12px; line-height: 1.4; font-family: Arial, Helvetica, sans-serif;">
-              Dear ${participantName},
-            </p>
+        <!-- Participant Message -->
+        <p style="font-size: 16px; font-weight: 600; color: #1e293b; margin-bottom: 12px; line-height: 1.4; font-family: Arial, Helvetica, sans-serif;">
+          Dear ${participantName},
+        </p>
 
-            <p style="font-size: 16px; color: #475569; margin-bottom: 24px; line-height: 1.6; font-family: Arial, Helvetica, sans-serif;">
-              Thank you for your contribution as 
-              <span style="background-color: #eff6ff; color: #1d4ed8; font-weight: 600; padding: 3px 10px; border-radius: 20px; border: 1px solid #bfdbfe; font-size: 14px; display: inline-block;">${role}</span> 
-              in the <strong style="color: #0f172a;">${eventName}</strong>
-              <br>We are pleased to announce that your official E-Certificate is now ready for the redemption thorough our Official Portal.
-              <br><strong style="color: #0f172a;">How to Download Your Certificate:</strong>
-            </p>
-            <ol>
-              <li><strong style="color: #0f172a;">Visit the Portal: </strong>Go to the Official <a href="https://siec-certification-portal.vercel.app/" style="color: #2563eb; font-weight: bold; text-decoration: underline;">SIEC E-Certification Portal</a>.</li>
-              <li><strong style="color: #0f172a;">Select Event: </strong>Choose ${eventName} from the dropdown menu.</li>
-              <li><strong style="color: #0f172a;">Enter your Registered Email: </strong>Enter your email address.</li>
-              <li><strong style="color: #0f172a;">Download Certificate: </strong>Preview your Certificate and download it in your Preferred Format (PNG/PDF) or You can directly Upload it on your LinkedIn Profile.</li>
-            </ol>
+        <p style="font-size: 16px; color: #475569; margin-bottom: 12px; line-height: 1.6; font-family: Arial, Helvetica, sans-serif;">
+            Thank you for your contribution as 
+          <span style="background-color: #eff6ff; color: #1d4ed8; font-weight: 600; padding: 3px 10px; border-radius: 20px; border: 1px solid #bfdbfe; font-size: 14px; display: inline-block;">${role}</span> 
+          in the <strong style="color: #0f172a;">${eventName}</strong>.
+          <br>We are pleased to announce that your official E-Certificate is now ready for the redemption thorough our Official Portal.
+          <br><strong style="color: #0f172a;">How to Download Your Certificate:</strong>
+        </p>
+        <ol>
+          <li><strong style="color: #000000;">Visit the Portal: </strong>Go to the Official <a href="https://siec-certification-portal.vercel.app/" style="color: #2563eb; font-weight: bold; text-decoration: underline;">SIEC E-Certification Portal</a>.</li>
+          <li><strong style="color: #000000;">Select Event: </strong>Choose ${eventName} from the dropdown menu.</li>
+          <li><strong style="color: #000000;">Enter your Registered Email: </strong>Enter your email address.</li>
+          <li><strong style="color: #000000;">Download Certificate: </strong>Preview your Certificate and download it in your Preferred Format (PNG/PDF) or You can directly Upload it on your LinkedIn Profile.</li>
+        </ol>
 
-            <!-- Direct Certificate Link -->
-            <p style="font-size: 16px; color: #475569; margin-bottom: 28px; line-height: 1.6; font-family: Arial, Helvetica, sans-serif;">
-              Direct Link to Your <a href="${certificateUrl}" style="color: #2563eb; font-weight: bold; text-decoration: underline;">Certificate</a>.
-            </p>
+        <!-- Direct Certificate Link -->
+        <p style="font-size: 16px; color: #475569; margin-bottom: 12px; line-height: 1.6; font-family: Arial, Helvetica, sans-serif;">
+          Direct Link to Your <a href="${certificateUrl}" style="color: #2563eb; font-weight: bold; text-decoration: underline;">Certificate</a>.
+        </p>
 
-            <!-- Social / Tagging CTA -->
-            <div style="background-color: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 16px; font-family: Arial, Helvetica, sans-serif;">
-              <p style="font-size: 14px; color: #0369a1; margin: 0; line-height: 1.5;">
-                Sharing your achievement on social media? Be sure to tag <a href="https://www.linkedin.com/company/siec-community/" style="color: #0284c7; font-weight: bold; text-decoration: underline;">SIEC Community</a> on LinkedIn so we can re-share and celebrate your accomplishment!
-              </p>
-            </div>
-
-          </div>
+        <!-- Social / Tagging CTA -->
+        <div style="background-color: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 16px; font-family: Arial, Helvetica, sans-serif;">
+          <p style="font-size: 16px; color: #0369a1; margin: 0; line-height: 1.5;">
+            Sharing your achievement on social media? Be sure to tag <a href="https://www.linkedin.com/company/siec-community/" style="color: #0284c7; font-weight: bold; text-decoration: underline;">SIEC Community</a> on LinkedIn so we can re-share and celebrate your accomplishment!
+          </p>
         </div>
-      </td>
-    </tr>
-  </table>
-
+      </div>
+    </div>
 </body>
 </html>`.trim();
 }
@@ -163,12 +154,12 @@ export async function sendSingleCertificateEmail(
     const logoPath = path.join(process.cwd(), "public", "SIEC Horizontal.png");
     const attachments = fs.existsSync(logoPath)
       ? [
-          {
-            filename: "SIEC Horizontal.png",
-            path: logoPath,
-            cid: "siec-horizontal-logo",
-          },
-        ]
+        {
+          filename: "SIEC Horizontal.png",
+          path: logoPath,
+          cid: "siec-horizontal-logo",
+        },
+      ]
       : [];
 
     const info = await transporter.sendMail({
