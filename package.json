@@ -18,7 +18,7 @@
     "html2canvas": "^1.4.1",
     "jspdf": "^4.2.1",
     "jszip": "^3.10.2",
-    "next": "^15.3.4",
+    "next": "^15.5.28",
     "nodemailer": "^10.0.12",
     "papaparse": "^5.7.0",
     "react": "^19.1.0",
