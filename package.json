@@ -19,7 +19,7 @@
     "jspdf": "^4.2.1",
     "jszip": "^3.10.2",
     "next": "^15.3.4",
-    "nodemailer": "^10.0.12",
+    "nodemailer": "^10.1.4",
     "papaparse": "^5.7.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
